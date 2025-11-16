@@ -3,7 +3,7 @@ import * as mongoose from 'mongoose';
 import { Employee } from 'src/employee/schemas/employee.schema';
 
 /**
- * Embedded doc for rating scale levels (e.g., 1 - Poor, 5 - Excellent)
+ * Class for rating scale levels (e.g., 1 - Poor, 5 - Excellent)
  */
 class RatingScaleLevel {
   @Prop({ required: true })
@@ -14,7 +14,7 @@ class RatingScaleLevel {
 }
 
 /**
- * Embedded doc for individual evaluation criteria
+ * Class for individual evaluation criteria
  */
 class EvaluationCriterion {
   @Prop({ required: true })
@@ -25,7 +25,7 @@ class EvaluationCriterion {
 }
 
 /**
- * Embedded doc for sections of the appraisal (e.g., 'Goals', 'Competencies')
+ * Class for sections of the appraisal (e.g., 'Goals', 'Competencies')
  */
 class TemplateSection {
   @Prop({ required: true })

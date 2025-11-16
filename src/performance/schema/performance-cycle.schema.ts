@@ -2,7 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Employee } from 'src/employee/schemas/employee.schema';
 import { PerformanceTemplate } from 'src/performance/schema/performance-template.schema';
-
+import { Performance } from './performance.schema';
 
 /**
  * Embedded doc for tracking participants in a cycle
@@ -34,7 +34,7 @@ class CycleParticipant {
     ref: 'Performance',
     default: null,
   })
-  appraisalId: Employee; // Link to the created appraisal record
+  appraisalId: Performance; // Link to the created appraisal record
 }
 
 @Schema({
