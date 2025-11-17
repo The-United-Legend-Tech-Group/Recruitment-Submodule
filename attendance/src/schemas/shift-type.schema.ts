@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { ShiftStatus } from '../common/enums';
+import { ShiftStatus } from '../types/shift-status';
 
 export type ShiftTypeDocument = ShiftType & Document;
 
@@ -21,7 +21,11 @@ export class ShiftType {
   @Prop({ default: 0 })
   allowedFlexMinutes: number;
 
-  @Prop({ type: String, enum: Object.values(ShiftStatus), default: ShiftStatus.Entered })
+  @Prop({
+    type: String,
+    enum: Object.values(ShiftStatus),
+    default: ShiftStatus.Entered,
+  })
   status: ShiftStatus;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })

@@ -1,8 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types, Schema as MSchema } from 'mongoose';
-import {
-  PunchType, PunchMethod, AttendanceStatus, ExceptionType,
-} from '../common/enums';
+import { PunchType } from '../types/punch-type';
+import { PunchMethod } from '../types/punch-method';
+import { AttendanceStatus } from '../types/attendance-status';
+import { ExceptionType } from '../types/exception-type';
 
 export type AttendanceRecordDocument = AttendanceRecord & Document;
 
@@ -15,7 +16,11 @@ export class Punch {
   @Prop({ type: Date, required: true })
   time: Date;
 
-  @Prop({ type: String, enum: Object.values(PunchMethod), default: PunchMethod.Biometric })
+  @Prop({
+    type: String,
+    enum: Object.values(PunchMethod),
+    default: PunchMethod.Biometric,
+  })
   method: PunchMethod;
 
   @Prop()
@@ -31,7 +36,8 @@ export class AttendanceException {
   @Prop({ default: false })
   resolved: boolean;
 }
-export const AttendanceExceptionSchema = SchemaFactory.createForClass(AttendanceException);
+export const AttendanceExceptionSchema =
+  SchemaFactory.createForClass(AttendanceException);
 
 @Schema({ timestamps: true })
 export class AttendanceRecord {
@@ -47,7 +53,11 @@ export class AttendanceRecord {
   @Prop({ type: Types.ObjectId, ref: 'ShiftAssignment' })
   linkedShift?: Types.ObjectId;
 
-  @Prop({ type: String, enum: Object.values(AttendanceStatus), default: AttendanceStatus.Present })
+  @Prop({
+    type: String,
+    enum: Object.values(AttendanceStatus),
+    default: AttendanceStatus.Present,
+  })
   status: AttendanceStatus;
 
   @Prop()
@@ -66,4 +76,5 @@ export class AttendanceRecord {
   exceptions: AttendanceException[];
 }
 
-export const AttendanceRecordSchema = SchemaFactory.createForClass(AttendanceRecord);
+export const AttendanceRecordSchema =
+  SchemaFactory.createForClass(AttendanceRecord);

@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
-import { ShiftStatus } from '../common/enums';
+import { ShiftStatus } from '../types/shift-status';
 
 export type ShiftAssignmentDocument = ShiftAssignment & Document;
 
@@ -24,11 +24,16 @@ export class ShiftAssignment {
   @Prop({ type: Date })
   endDate?: Date;
 
-  @Prop({ type: String, enum: Object.values(ShiftStatus), default: ShiftStatus.Approved })
+  @Prop({
+    type: String,
+    enum: Object.values(ShiftStatus),
+    default: ShiftStatus.Approved,
+  })
   status: ShiftStatus;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   assignedBy?: Types.ObjectId;
 }
 
-export const ShiftAssignmentSchema = SchemaFactory.createForClass(ShiftAssignment);
+export const ShiftAssignmentSchema =
+  SchemaFactory.createForClass(ShiftAssignment);

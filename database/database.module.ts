@@ -14,6 +14,10 @@ import {
   ShiftType,
   ShiftTypeSchema,
 } from '..\\attendance\\src\\schemas\\shift-type.schema';
+import {
+  TimeSlot,
+  TimeSlotSchema,
+} from '..\\attendance\\src\\schemas\\time-slots.schema';
 
 @Global()
 @Module({
@@ -42,6 +46,7 @@ import {
       { name: AttendanceRecord.name, schema: AttendanceRecordSchema },
       { name: ShiftAssignment.name, schema: ShiftAssignmentSchema },
       { name: ShiftType.name, schema: ShiftTypeSchema },
+      { name: TimeSlot.name, schema: TimeSlotSchema },
     ]),
   ],
   exports: [MongooseModule],

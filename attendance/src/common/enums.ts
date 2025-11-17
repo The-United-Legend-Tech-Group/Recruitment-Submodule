@@ -69,9 +69,3 @@ export enum OvertimeType {
   PreApproved = 'PreApproved',
   AfterHours = 'AfterHours',
 }
-
-export enum CorrectionStatus {
-  Pending = 'Pending',
-  Approved = 'Approved',
-  Rejected = 'Rejected',
-}
