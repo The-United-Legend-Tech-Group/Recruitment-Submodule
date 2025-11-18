@@ -1,13 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AppController } from './employee-subsystem.controller';
+import { AppService } from './employee-subsystem.service';
 import { EmployeeModule } from './employee/employee.module';
 import { OrganizationStructureModule } from './organization-structure/organization-structure.module';
 import { NotificationModule } from './notification/notification.module';
-import { ProfileChangeRequestModule } from './profile-change-request/profile-change-request.module';
-import { AuthModule } from './auth/auth.module';
+import { AuthModule } from './employee/auth.module';
 
 @Module({
   imports: [
@@ -28,7 +27,6 @@ import { AuthModule } from './auth/auth.module';
     EmployeeModule,
     OrganizationStructureModule,
     NotificationModule,
-    ProfileChangeRequestModule,
     AuthModule,
 
   ],
