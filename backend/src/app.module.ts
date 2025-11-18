@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from '../database/database.module';
 import { TimeMangementModule } from './time-mangement/timemangment.module';
 import { LeavesModule } from './leaves/leaves.module';
+import { EmployeeSubsystemModule } from './employee-subsystem/employee-subsystem.module';
 
 @Module({
   imports: [
@@ -16,6 +17,8 @@ import { LeavesModule } from './leaves/leaves.module';
     TimeMangementModule,
     // Leaves subsystem
     LeavesModule,
+    // Employee management subsystem
+    EmployeeSubsystemModule,
   ],
   controllers: [AppController],
   providers: [AppService],
