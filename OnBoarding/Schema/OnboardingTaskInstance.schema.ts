@@ -90,7 +90,7 @@ export class OnboardingTaskInstance {
 
   
 
-  @Prop({ type: Types.ObjectId, ref: 'User' }) 
+  @Prop({ type: Types.ObjectId, ref: 'Employee' }) 
 
   completedBy: Types.ObjectId; 
 

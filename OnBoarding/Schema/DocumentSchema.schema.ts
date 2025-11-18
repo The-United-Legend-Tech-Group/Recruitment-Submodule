@@ -34,7 +34,7 @@ export class Document {
   accepted: boolean;
 
   // Optional: who approved it and when
-  @Prop({ type: Types.ObjectId, ref: 'User', default: null })
+  @Prop({ type: Types.ObjectId, ref: 'Employee', default: null })
   approvedBy: Types.ObjectId;
 
   @Prop({ default: null })
