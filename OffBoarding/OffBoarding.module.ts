@@ -1,19 +1,23 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { forwardRef } from '@nestjs/common';
-import { Asset, AssetSchema } from './Schema/Asset.schema';
-import { OnboardingTaskInstance, OnboardingTaskInstanceSchema } from './Schema/OnboardingTaskInstance.schema';
-import { Document, DocumentSchema } from './Schema/DocumentSchema.schema';
-import { EmployeeTracker, EmployeeTrackerSchema } from './Schema/EmployeeTracker.schema';
-import { Contract, ContractSchema } from './Schema/ContractDocument.schema';
 
+import { OffboardingTask, OffboardingTaskSchema } from './Schema/OffBoardingTask.schema';
+import { OffboardingTracker, OffboardingTrackerSchema } from './Schema/OffBoardingTracker.schema';
+import { TerminationRequest, TerminationRequestSchema } from './Schema/TerminationRequest.schema';
+import { ResignationRequest, ResignationRequestSchema } from './Schema/ResignationRequest.schema';
 
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Asset.name, schema: AssetSchema },{ name: OnboardingTaskInstance.name, schema: OnboardingTaskInstanceSchema },{ name: Document.name, schema: DocumentSchema },{ name: EmployeeTracker.name, schema: EmployeeTrackerSchema },{ name: Contract.name, schema: ContractSchema }]),
+    imports: [
+        MongooseModule.forFeature([
+            { name: OffboardingTask.name, schema: OffboardingTaskSchema },
+            { name: OffboardingTracker.name, schema: OffboardingTrackerSchema },
+            { name: TerminationRequest.name, schema: TerminationRequestSchema },
+            { name: ResignationRequest.name, schema: ResignationRequestSchema },
+        ]),
     ],
-  controllers: [],
-  providers: [],
+    controllers: [],
+    providers: [],
+    exports: [MongooseModule],
 })
-export class OnBoardingModule {}
+export class OffBoardingModule {}
