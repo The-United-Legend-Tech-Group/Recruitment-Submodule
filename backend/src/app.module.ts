@@ -9,6 +9,8 @@ import { EmployeeSubsystemModule } from './employee-subsystem/employee-subsystem
 import { ConfigSetupModule } from './config_setup/config_setup.module';
 import { TrackingModule } from './tracking/tracking.module';
 import { ExecutionModule } from './execution/execution.module';
+import {recruitmentModule } from './Recruitment/recruitment.module';
+
 
 @Module({
   imports: [
@@ -28,6 +30,8 @@ import { ExecutionModule } from './execution/execution.module';
     TrackingModule,
     // Execution subsystem
     ExecutionModule,
+    // Recruitment subsystem
+    recruitmentModule
   ],
   controllers: [AppController],
   providers: [AppService],
