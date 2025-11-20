@@ -1,12 +1,26 @@
-import { Model, Document, FilterQuery, UpdateQuery, QueryOptions } from 'mongoose';
+import {
+  Model,
+  Document,
+  FilterQuery,
+  UpdateQuery,
+  QueryOptions,
+} from 'mongoose';
 
 export interface IRepository<T> {
   create(dto: Partial<T>): Promise<T>;
   findOne(filter: FilterQuery<T>): Promise<T | null>;
   findById(id: string): Promise<T | null>;
   find(filter?: FilterQuery<T>): Promise<T[]>;
-  update(filter: FilterQuery<T>, update: UpdateQuery<T>, options?: QueryOptions): Promise<T | null>;
-  updateById(id: string, update: UpdateQuery<T>, options?: QueryOptions): Promise<T | null>;
+  update(
+    filter: FilterQuery<T>,
+    update: UpdateQuery<T>,
+    options?: QueryOptions,
+  ): Promise<T | null>;
+  updateById(
+    id: string,
+    update: UpdateQuery<T>,
+    options?: QueryOptions,
+  ): Promise<T | null>;
   delete(filter: FilterQuery<T>): Promise<{ deletedCount?: number }>;
   deleteById(id: string): Promise<any>;
 }
@@ -35,11 +49,19 @@ export class BaseRepository<T extends Document> implements IRepository<T> {
     return this.model.find(filter).exec();
   }
 
-  async update(filter: FilterQuery<T>, update: UpdateQuery<T>, options: QueryOptions = { new: true }): Promise<T | null> {
+  async update(
+    filter: FilterQuery<T>,
+    update: UpdateQuery<T>,
+    options: QueryOptions = { new: true },
+  ): Promise<T | null> {
     return this.model.findOneAndUpdate(filter, update, options).exec();
   }
 
-  async updateById(id: string, update: UpdateQuery<T>, options: QueryOptions = { new: true }): Promise<T | null> {
+  async updateById(
+    id: string,
+    update: UpdateQuery<T>,
+    options: QueryOptions = { new: true },
+  ): Promise<T | null> {
     return this.model.findByIdAndUpdate(id, update, options).exec();
   }
 
@@ -51,5 +73,4 @@ export class BaseRepository<T extends Document> implements IRepository<T> {
   async deleteById(id: string): Promise<any> {
     return this.model.findByIdAndDelete(id).exec();
   }
-  
 }
