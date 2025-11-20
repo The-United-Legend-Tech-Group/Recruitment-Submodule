@@ -1,23 +1,9 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument, Schema as MongooseSchema } from 'mongoose';
-import { Department } from 'src/organization-structure/schemas/department.schema';
-import { Position } from 'src/organization-structure/schemas/position.schema';
+import { Department } from '../../organization-structure/schemas/department.schema';
+import { Position } from '../../organization-structure/schemas/position.schema';
 
 export type EmployeeDocument = HydratedDocument<Employee>;
-
-/**
- * Employment details.
- */
-class EmploymentDetails {
-  @Prop({ required: true, unique: true })
-  employeeId: string;
-
-  @Prop({ required: true })
-  hireDate: Date;
-
-  @Prop({ required: true })
-  employmentType: string; //Fulltime, Partime or whatever is decided later
-}
 
 @Schema({
   timestamps: true, //createdAt and updatedAt
@@ -55,8 +41,14 @@ export class Employee {
   })
   role: string;
 
-  @Prop({ type: EmploymentDetails, _id: false })
-  employmentDetails: EmploymentDetails;
+  @Prop({ required: true, unique: true })
+  employeeId: string;
+
+  @Prop({ required: true })
+  hireDate: Date;
+
+  @Prop({ required: true })
+  employmentType: string; // Fulltime, Partime or similar
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'Position' })
   positionId: Position;
@@ -69,6 +61,12 @@ export class Employee {
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
+
+  @Prop({ type: Boolean, default: false})
+  signingBonus: boolean;
+
+  @Prop({ type: Boolean, default: false})
+  resignationStatus: boolean
 }
 
 //Add Contract

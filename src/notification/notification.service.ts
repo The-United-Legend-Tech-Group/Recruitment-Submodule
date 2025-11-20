@@ -10,9 +10,4 @@ export class NotificationService {
   constructor(
     @InjectModel(Notification.name) private notificationModel: Model<NotificationDocument>,
   ) {}
-
-  async create(payload: Partial<Notification>): Promise<Notification> {
-    const created = new this.notificationModel(payload);
-    return created.save();
-  }
 }
