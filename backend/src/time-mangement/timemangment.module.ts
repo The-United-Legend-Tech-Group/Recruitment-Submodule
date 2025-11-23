@@ -12,6 +12,8 @@ import {
 } from './models/shift-assignment.schema';
 import { ShiftType, ShiftTypeSchema } from './models/shift-type.schema';
 import { Shift, ShiftSchema } from './models/shift.schema';
+import { TimeController } from './time.controller';
+import { TimeService } from './time.service';
 
 @Module({
   imports: [
@@ -24,6 +26,8 @@ import { Shift, ShiftSchema } from './models/shift.schema';
       { name: Shift.name, schema: ShiftSchema },
     ]),
   ],
-  exports: [MongooseModule],
+  controllers: [TimeController],
+  providers: [TimeService],
+  exports: [MongooseModule, TimeService],
 })
 export class TimeMangementModule {}
