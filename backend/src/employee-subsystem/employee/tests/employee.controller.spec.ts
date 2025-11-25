@@ -151,6 +151,41 @@ describe('EmployeeController', () => {
             expect(mockEmployeeService.createProfileChangeRequest).toHaveBeenCalledWith(id, createProfileChangeRequestDto);
         });
 
+        it('should create a profile change request for legal name change', async () => {
+            const id = '1';
+            const createProfileChangeRequestDto: CreateProfileChangeRequestDto = {
+                requestDescription: 'Change legal name to reflect marriage',
+                reason: 'Marriage certificate provided',
+                requestedLegalName: {
+                    firstName: 'Jane',
+                    middleName: 'A.',
+                    lastName: 'Doe',
+                    fullName: 'Jane A. Doe',
+                },
+            } as any;
+
+            const result = { _id: 'req2', employeeId: id, ...createProfileChangeRequestDto };
+            mockEmployeeService.createProfileChangeRequest.mockResolvedValue(result);
+
+            expect(await controller.requestProfileCorrection(id, createProfileChangeRequestDto)).toBe(result);
+            expect(mockEmployeeService.createProfileChangeRequest).toHaveBeenCalledWith(id, createProfileChangeRequestDto);
+        });
+
+        it('should create a profile change request for marital status change', async () => {
+            const id = '1';
+            const createProfileChangeRequestDto: CreateProfileChangeRequestDto = {
+                requestDescription: 'Update marital status after marriage',
+                reason: 'Marriage certificate provided',
+                requestedMaritalStatus: 'MARRIED',
+            } as any;
+
+            const result = { _id: 'req3', employeeId: id, ...createProfileChangeRequestDto };
+            mockEmployeeService.createProfileChangeRequest.mockResolvedValue(result);
+
+            expect(await controller.requestProfileCorrection(id, createProfileChangeRequestDto)).toBe(result);
+            expect(mockEmployeeService.createProfileChangeRequest).toHaveBeenCalledWith(id, createProfileChangeRequestDto);
+        });
+
         it('should throw ConflictException if creation fails', async () => {
             const id = '1';
             const createProfileChangeRequestDto: CreateProfileChangeRequestDto = {
