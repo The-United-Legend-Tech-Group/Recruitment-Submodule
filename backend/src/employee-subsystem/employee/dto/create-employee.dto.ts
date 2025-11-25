@@ -103,4 +103,8 @@ export class CreateEmployeeDto {
     @IsOptional()
     @IsEnum(EmployeeStatus)
     status?: EmployeeStatus;
+
+    @IsOptional()
+    @IsString()
+    password?: string;
 }
