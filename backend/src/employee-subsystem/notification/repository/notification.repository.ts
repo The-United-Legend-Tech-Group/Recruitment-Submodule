@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, HydratedDocument } from 'mongoose';
-import { BaseRepository } from './base.repository';
+import { BaseRepository } from '../../../common/repository/base.repository';
 import { Notification } from '../schema/notification.schema';
 
 export type NotificationDocument = HydratedDocument<Notification>;
