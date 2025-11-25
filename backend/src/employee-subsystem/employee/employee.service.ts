@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EmployeeProfile } from './models/employee-profile.schema';
@@ -7,6 +7,7 @@ import { EmployeeProfileRepository } from './repository/employee-profile.reposit
 import { UpdateContactInfoDto } from './dto/update-contact-info.dto';
 import { UpdateEmployeeProfileDto } from './dto/update-employee-profile.dto';
 import { CreateProfileChangeRequestDto } from './dto/create-profile-change-request.dto';
+import { MaritalStatus } from './enums/employee-profile.enums';
 import { EmployeeProfileChangeRequestRepository } from './repository/ep-change-request.repository';
 
 @Injectable()
@@ -59,9 +60,36 @@ export class EmployeeService {
             requestDescription: createProfileChangeRequestDto.requestDescription,
             reason: createProfileChangeRequestDto.reason,
             status: undefined,
+            requestedMaritalStatus: undefined,
+            requestedLegalName: undefined,
         } as any;
 
-        return this.employeeProfileChangeRequestRepository.create(payload);
+            // ensure the request targets either a legal name change or marital status change
+            const { requestedLegalName, requestedMaritalStatus } = createProfileChangeRequestDto as any;
+
+            if (!requestedLegalName && !requestedMaritalStatus) {
+                throw new BadRequestException('At least one of requestedLegalName or requestedMaritalStatus must be provided');
+            }
+
+            if (requestedMaritalStatus) {
+                // basic enum validation
+                const allowed = Object.values(MaritalStatus) as string[];
+                if (!allowed.includes(requestedMaritalStatus)) {
+                    throw new BadRequestException('Invalid marital status');
+                }
+                payload.requestedMaritalStatus = requestedMaritalStatus;
+            }
+
+            if (requestedLegalName) {
+                payload.requestedLegalName = {
+                    firstName: requestedLegalName.firstName,
+                    middleName: requestedLegalName.middleName,
+                    lastName: requestedLegalName.lastName,
+                    fullName: requestedLegalName.fullName,
+                };
+            }
+
+            return this.employeeProfileChangeRequestRepository.create(payload);
     }
 
     async getTeamSummary(managerId: string) {
