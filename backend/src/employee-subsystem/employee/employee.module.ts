@@ -4,8 +4,8 @@ import {
   EmployeeProfile,
   EmployeeProfileSchema,
 } from './models/employee-profile.schema';
-import { EmployeeExternalController } from './employee-external.controller';
-import { EmployeeExternalService } from './employee-external.service';
+import { EmployeeController } from './employee.controller';
+import { EmployeeService } from './employee.service';
 
 @Module({
   imports: [
@@ -13,8 +13,8 @@ import { EmployeeExternalService } from './employee-external.service';
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
     ]),
   ],
-  controllers: [EmployeeExternalController],
-  providers: [EmployeeExternalService],
+  controllers: [EmployeeController],
+  providers: [EmployeeService],
   exports: [MongooseModule],
 })
-export class EmployeeModule {}
+export class EmployeeModule { }
