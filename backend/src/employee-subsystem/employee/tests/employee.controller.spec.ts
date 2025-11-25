@@ -4,6 +4,7 @@ import { EmployeeService } from '../employee.service';
 import { CreateEmployeeDto } from '../dto/create-employee.dto';
 import { UpdateContactInfoDto } from '../dto/update-contact-info.dto';
 import { UpdateEmployeeProfileDto } from '../dto/update-employee-profile.dto';
+import { CreateProfileChangeRequestDto } from '../dto/create-profile-change-request.dto';
 import { ConflictException } from '@nestjs/common';
 import { ApiKeyGuard } from '../../guards/api-key.guard';
 
@@ -15,6 +16,7 @@ describe('EmployeeController', () => {
         onboard: jest.fn(),
         updateContactInfo: jest.fn(),
         updateProfile: jest.fn(),
+        createProfileChangeRequest: jest.fn(),
     };
 
     beforeEach(async () => {
@@ -127,6 +129,33 @@ describe('EmployeeController', () => {
             mockEmployeeService.updateProfile.mockRejectedValue(new ConflictException('Employee not found'));
 
             await expect(controller.updateProfile(id, updateEmployeeProfileDto)).rejects.toThrow(ConflictException);
+        });
+    });
+
+    describe('requestProfileCorrection', () => {
+        it('should create a profile change request', async () => {
+            const id = '1';
+            const createProfileChangeRequestDto: CreateProfileChangeRequestDto = {
+                requestDescription: 'Please correct my name spelling',
+                reason: 'Typo in HR records',
+            } as any;
+
+            const result = { _id: 'req1', employeeId: id, ...createProfileChangeRequestDto };
+            mockEmployeeService.createProfileChangeRequest.mockResolvedValue(result);
+
+            expect(await controller.requestProfileCorrection(id, createProfileChangeRequestDto)).toBe(result);
+            expect(mockEmployeeService.createProfileChangeRequest).toHaveBeenCalledWith(id, createProfileChangeRequestDto);
+        });
+
+        it('should throw ConflictException if creation fails', async () => {
+            const id = '1';
+            const createProfileChangeRequestDto: CreateProfileChangeRequestDto = {
+                requestDescription: 'Invalid request',
+            } as any;
+
+            mockEmployeeService.createProfileChangeRequest.mockRejectedValue(new ConflictException('Creation failed'));
+
+            await expect(controller.requestProfileCorrection(id, createProfileChangeRequestDto)).rejects.toThrow(ConflictException);
         });
     });
 });
