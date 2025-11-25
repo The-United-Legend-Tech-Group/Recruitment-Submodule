@@ -16,8 +16,6 @@ export class TimeService {
   /* Existing simple time record creation kept for backwards compatibility */
   private items: any[] = [];
 
-  
-
   // Shifts API
   async createShift(dto: CreateShiftDto) {
     return this.shiftRepo.create(dto as any);
@@ -39,7 +37,11 @@ export class TimeService {
     return this.shiftAssignmentRepo.updateById(id, { status: dto.status });
   }
 
-  async getShiftsForEmployeeTerm(employeeId: string, start: string, end: string) {
+  async getShiftsForEmployeeTerm(
+    employeeId: string,
+    start: string,
+    end: string,
+  ) {
     const s = new Date(start);
     const e = new Date(end);
 
@@ -49,6 +51,4 @@ export class TimeService {
       $or: [{ endDate: null }, { endDate: { $gte: s } }],
     } as any);
   }
-
-  
 }

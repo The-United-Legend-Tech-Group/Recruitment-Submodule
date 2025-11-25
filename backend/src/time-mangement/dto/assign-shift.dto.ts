@@ -23,7 +23,10 @@ export class AssignShiftDto {
   @IsString()
   endDate?: string;
 
-  @ApiProperty({ example: ShiftAssignmentStatus.PENDING, enum: ShiftAssignmentStatus })
+  @ApiProperty({
+    example: ShiftAssignmentStatus.PENDING,
+    enum: ShiftAssignmentStatus,
+  })
   @IsOptional()
   status?: ShiftAssignmentStatus;
 }

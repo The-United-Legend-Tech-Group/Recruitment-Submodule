@@ -30,6 +30,11 @@ import { ShiftAssignmentRepository } from './repository/shift-assignment.reposit
   ],
   controllers: [TimeController],
   providers: [TimeService, ShiftRepository, ShiftAssignmentRepository],
-  exports: [MongooseModule, TimeService, ShiftRepository, ShiftAssignmentRepository],
+  exports: [
+    MongooseModule,
+    TimeService,
+    ShiftRepository,
+    ShiftAssignmentRepository,
+  ],
 })
 export class TimeMangementModule {}

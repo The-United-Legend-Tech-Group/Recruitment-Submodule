@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Patch, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Param,
+  Query,
+} from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TimeService } from './time.service';
 import { CreateTimeDto } from './dto/create-time.dto';
@@ -18,8 +26,6 @@ export class TimeController {
     return { pong: true };
   }
 
-  
-
   @Post('shifts')
   @ApiOperation({ summary: 'Create a shift definition' })
   createShift(@Body() dto: CreateShiftDto) {
@@ -34,7 +40,10 @@ export class TimeController {
 
   @Patch('shifts/assignments/:id/status')
   @ApiOperation({ summary: 'Update a shift assignment status' })
-  updateAssignmentStatus(@Param('id') id: string, @Body() dto: UpdateShiftStatusDto) {
+  updateAssignmentStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateShiftStatusDto,
+  ) {
     return this.service.updateShiftAssignmentStatus(id, dto);
   }
 
