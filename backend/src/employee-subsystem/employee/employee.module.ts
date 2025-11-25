@@ -7,7 +7,6 @@ import {
 import { EmployeeController } from './employee.controller';
 import { EmployeeService } from './employee.service';
 import { EmployeeProfileRepository } from './repository/employee-profile.repository';
-import { UserRepository } from './repository/user.repository';
 
 @Module({
   imports: [
@@ -16,7 +15,7 @@ import { UserRepository } from './repository/user.repository';
     ]),
   ],
   controllers: [EmployeeController],
-  providers: [EmployeeService, EmployeeProfileRepository, UserRepository],
-  exports: [MongooseModule, EmployeeProfileRepository, UserRepository],
+  providers: [EmployeeService, EmployeeProfileRepository],
+  exports: [MongooseModule, EmployeeProfileRepository],
 })
 export class EmployeeModule { }

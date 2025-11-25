@@ -14,4 +14,8 @@ export class EmployeeProfileRepository extends BaseRepository<EmployeeProfileDoc
     ) {
         super(model);
     }
+
+    async findByEmail(email: string): Promise<EmployeeProfileDocument | null> {
+        return this.model.findOne({ personalEmail: email }).select('+password').exec();
+    }
 }

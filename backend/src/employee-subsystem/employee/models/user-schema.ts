@@ -62,9 +62,6 @@ export class UserProfileBase {
 
   @Prop({ type: Types.ObjectId, ref: 'EmployeeSystemRole' })
   accessProfileId?: Types.ObjectId;
-
-  @Prop({ type: String, select: false })
-  password?: string;
 }
 
 export const UserProfileBaseSchema =
