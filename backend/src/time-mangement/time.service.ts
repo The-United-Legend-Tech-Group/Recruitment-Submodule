@@ -1,18 +1,188 @@
 import { Injectable } from '@nestjs/common';
-import { CreateTimeDto } from './dto/create-time.dto';
+import { CreateShiftDto } from './dto/create-shift.dto';
+import { AssignShiftDto } from './dto/assign-shift.dto';
+import { UpdateShiftStatusDto } from './dto/update-shift-status.dto';
+import { ShiftRepository } from './repository/shift.repository';
+import { ShiftAssignmentRepository } from './repository/shift-assignment.repository';
+import { ScheduleRuleRepository } from './repository/schedule-rule.repository';
+import { CreateScheduleRuleDto } from './dto/create-schedule-rule.dto';
 
 @Injectable()
 export class TimeService {
+  constructor(
+    private readonly shiftRepo: ShiftRepository,
+    private readonly shiftAssignmentRepo: ShiftAssignmentRepository,
+    private readonly scheduleRuleRepo?: ScheduleRuleRepository,
+  ) {}
+
+  /* Existing simple time record creation kept for backwards compatibility */
   private items: any[] = [];
 
-  create(dto: CreateTimeDto) {
-    const item = { id: Date.now().toString(), ...dto };
-    this.items.push(item);
-    return item;
+  // Shifts API
+  async createShift(dto: CreateShiftDto) {
+    return this.shiftRepo.create(dto as any);
   }
 
-  // simple list helper (not exposed)
-  list() {
-    return this.items;
+  async assignShiftToEmployee(dto: AssignShiftDto) {
+    const payload = {
+      employeeId: dto.employeeId,
+      shiftId: dto.shiftId,
+      startDate: new Date(dto.startDate),
+      endDate: dto.endDate ? new Date(dto.endDate) : undefined,
+      status: dto.status,
+    } as any;
+
+    return this.shiftAssignmentRepo.create(payload);
+  }
+
+  /**
+   * Assign a shift scoped to employees, a department, or a position.
+   * - Provide `employeeIds: string[]` to assign individually to multiple employees
+   * - Or provide `departmentId` to assign to a department
+   * - Or provide `positionId` to assign to a position
+   * Returns array of created assignments.
+   */
+  async assignShiftScoped(dto: {
+    employeeIds?: string[];
+    departmentId?: string;
+    positionId?: string;
+    shiftId: string;
+    startDate: string | Date;
+    endDate?: string | Date;
+    status?: string;
+  }) {
+    const created: any[] = [];
+    const start = dto.startDate ? new Date(dto.startDate) : undefined;
+    const end = dto.endDate ? new Date(dto.endDate) : undefined;
+
+    if (dto.employeeIds && dto.employeeIds.length) {
+      for (const empId of dto.employeeIds) {
+        const payload: any = {
+          employeeId: empId,
+          shiftId: dto.shiftId,
+          startDate: start,
+          endDate: end,
+          status: dto.status,
+        };
+        const res = await this.shiftAssignmentRepo.create(payload);
+        created.push(res);
+      }
+      return created;
+    }
+
+    if (dto.departmentId) {
+      const payload: any = {
+        departmentId: dto.departmentId,
+        shiftId: dto.shiftId,
+        startDate: start,
+        endDate: end,
+        status: dto.status,
+      };
+      const res = await this.shiftAssignmentRepo.create(payload);
+      created.push(res);
+      return created;
+    }
+
+    if (dto.positionId) {
+      const payload: any = {
+        positionId: dto.positionId,
+        shiftId: dto.shiftId,
+        startDate: start,
+        endDate: end,
+        status: dto.status,
+      };
+      const res = await this.shiftAssignmentRepo.create(payload);
+      created.push(res);
+      return created;
+    }
+
+    throw new Error(
+      'No target specified for shift assignment (employeeIds, departmentId or positionId)',
+    );
+  }
+
+  /**
+   * Bulk update assignment statuses by id list.
+   */
+  async updateShiftAssignmentsStatus(ids: string[], status: string) {
+    const results: any[] = [];
+    for (const id of ids) {
+      const res = await this.shiftAssignmentRepo.updateById(id, {
+        status,
+      } as any);
+      results.push(res);
+    }
+    return results;
+  }
+
+  async updateShiftAssignmentStatus(id: string, dto: UpdateShiftStatusDto) {
+    return this.shiftAssignmentRepo.updateById(id, { status: dto.status });
+  }
+
+  async getShiftsForEmployeeTerm(
+    employeeId: string,
+    start: string,
+    end: string,
+  ) {
+    const s = new Date(start);
+    const e = new Date(end);
+
+    return this.shiftAssignmentRepo.find({
+      employeeId,
+      startDate: { $lte: e },
+      $or: [{ endDate: null }, { endDate: { $gte: s } }],
+    } as any);
+  }
+
+  // Schedule rule APIs
+  async createScheduleRule(dto: CreateScheduleRuleDto) {
+    if (!this.scheduleRuleRepo) {
+      throw new Error('ScheduleRuleRepository not available');
+    }
+
+    // If shiftTypes or dates are provided, encode them into the pattern field
+    // so we don't need to modify the ScheduleRule schema. Pattern is a free-form
+    // string and can carry structured JSON for business rules like:
+    // { shiftTypes: [...], startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
+    const payload: any = { name: dto.name, active: dto.active };
+
+    if (dto.pattern && !(dto.shiftTypes || dto.startDate || dto.endDate)) {
+      payload.pattern = dto.pattern;
+    } else {
+      // Build structured pattern if structured fields present
+      const rule: any = {};
+      if (dto.pattern) rule.pattern = dto.pattern;
+      if (dto.shiftTypes) rule.shiftTypes = dto.shiftTypes;
+      if (dto.startDate) rule.startDate = dto.startDate;
+      if (dto.endDate) rule.endDate = dto.endDate;
+
+      // If there's any structured content, stringify it into pattern
+      if (Object.keys(rule).length) {
+        payload.pattern = JSON.stringify(rule);
+      } else {
+        payload.pattern = '';
+      }
+    }
+
+    return this.scheduleRuleRepo.create(payload as any);
+  }
+
+  async getScheduleRules() {
+    if (!this.scheduleRuleRepo) {
+      throw new Error('ScheduleRuleRepository not available');
+    }
+    return this.scheduleRuleRepo.find({});
+  }
+
+  async attachScheduleRuleToAssignment(
+    assignmentId: string,
+    scheduleRuleId: string,
+  ) {
+    return this.shiftAssignmentRepo.updateById(assignmentId, {
+      scheduleRuleId,
+    } as any);
+  }
+  async getAllShifts() {
+    return this.shiftRepo.find({});
   }
 }
