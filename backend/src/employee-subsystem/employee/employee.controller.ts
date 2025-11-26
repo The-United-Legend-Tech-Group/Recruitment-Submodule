@@ -61,6 +61,13 @@ export class EmployeeController {
         return this.employeeService.getTeamSummary(managerId);
     }
 
+    @Get('team/profiles')
+    @UseGuards(authorizationGuard)
+    @Roles(Role.DEPARTMENT_HEAD)
+    async getTeamProfiles(@Query('managerId') managerId: string) {
+        return this.employeeService.getTeamProfiles(managerId);
+    }
+
     // HR Admin: review profile change requests
     @Get('profile-change-requests')
     @UseGuards(authorizationGuard)

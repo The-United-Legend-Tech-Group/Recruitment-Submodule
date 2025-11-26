@@ -133,6 +133,11 @@ export class EmployeeService {
         return { managerId, items };
     }
 
+    async getTeamProfiles(managerId: string) {
+        const items = await this.employeeProfileRepository.getTeamMembersByManagerId(managerId);
+        return { managerId, items };
+    }
+
     async updateStatus(id: string, updateEmployeeStatusDto: UpdateEmployeeStatusDto): Promise<EmployeeProfile> {
         const employee = await this.employeeProfileRepository.findById(id);
         if (!employee) {

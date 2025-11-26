@@ -19,6 +19,7 @@ describe('EmployeeController', () => {
         updateProfile: jest.fn(),
         createProfileChangeRequest: jest.fn(),
         getTeamSummary: jest.fn(),
+        getTeamProfiles: jest.fn(),
         assignRoles: jest.fn(),
         updateStatus: jest.fn(),
         listProfileChangeRequests: jest.fn(),
@@ -218,6 +219,23 @@ describe('EmployeeController', () => {
 
             expect(await controller.getTeamSummary(managerId)).toBe(result);
             expect(mockEmployeeService.getTeamSummary).toHaveBeenCalledWith(managerId);
+        });
+    });
+
+    describe('getTeamProfiles', () => {
+        it('should return team profiles for manager', async () => {
+            const managerId = 'mgr1';
+            const result = {
+                managerId,
+                items: [
+                    { _id: 'e1', firstName: 'John', lastName: 'Doe', positionId: 'pos1' },
+                ],
+            };
+
+            mockEmployeeService.getTeamProfiles.mockResolvedValue(result);
+
+            expect(await controller.getTeamProfiles(managerId)).toBe(result);
+            expect(mockEmployeeService.getTeamProfiles).toHaveBeenCalledWith(managerId);
         });
     });
 
