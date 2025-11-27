@@ -29,4 +29,9 @@ export class AssignShiftDto {
   })
   @IsOptional()
   status?: ShiftAssignmentStatus;
+
+  @ApiProperty({ example: 'schedule-rule-id', required: false })
+  @IsOptional()
+  @IsString()
+  scheduleRuleId?: string;
 }

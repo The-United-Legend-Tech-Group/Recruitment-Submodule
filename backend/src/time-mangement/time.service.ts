@@ -34,6 +34,7 @@ export class TimeService {
       startDate: new Date(dto.startDate),
       endDate: dto.endDate ? new Date(dto.endDate) : undefined,
       status: dto.status,
+      scheduleRuleId: (dto as any).scheduleRuleId,
     } as any;
 
     return this.shiftAssignmentRepo.create(payload);
@@ -54,6 +55,7 @@ export class TimeService {
     startDate: string | Date;
     endDate?: string | Date;
     status?: string;
+    scheduleRuleId?: string;
   }) {
     const created: any[] = [];
     const start = dto.startDate ? new Date(dto.startDate) : undefined;
@@ -67,6 +69,7 @@ export class TimeService {
           startDate: start,
           endDate: end,
           status: dto.status,
+            scheduleRuleId: dto.scheduleRuleId,
         };
         const res = await this.shiftAssignmentRepo.create(payload);
         created.push(res);
@@ -81,6 +84,7 @@ export class TimeService {
         startDate: start,
         endDate: end,
         status: dto.status,
+          scheduleRuleId: dto.scheduleRuleId,
       };
       const res = await this.shiftAssignmentRepo.create(payload);
       created.push(res);
@@ -94,6 +98,7 @@ export class TimeService {
         startDate: start,
         endDate: end,
         status: dto.status,
+          scheduleRuleId: dto.scheduleRuleId,
       };
       const res = await this.shiftAssignmentRepo.create(payload);
       created.push(res);
@@ -150,25 +155,88 @@ export class TimeService {
     // { shiftTypes: [...], startDate: 'YYYY-MM-DD', endDate: 'YYYY-MM-DD' }
     const payload: any = { name: dto.name, active: dto.active };
 
-    if (dto.pattern && !(dto.shiftTypes || dto.startDate || dto.endDate)) {
+    // determine if any structured fields provided (including weekly/rest info)
+    const hasStructured =
+      !!(
+        dto.shiftTypes ||
+        dto.startDate ||
+        dto.endDate ||
+        (dto as any).weeklyRestDays ||
+        (dto as any).restDates
+      );
+
+    if (dto.pattern && !hasStructured) {
+      // If only a free-form pattern provided, use it verbatim
       payload.pattern = dto.pattern;
     } else {
-      // Build structured pattern if structured fields present
+      // Build structured pattern from any provided structured fields
       const rule: any = {};
       if (dto.pattern) rule.pattern = dto.pattern;
       if (dto.shiftTypes) rule.shiftTypes = dto.shiftTypes;
       if (dto.startDate) rule.startDate = dto.startDate;
       if (dto.endDate) rule.endDate = dto.endDate;
+      if ((dto as any).weeklyRestDays) rule.weeklyRestDays = (dto as any).weeklyRestDays;
+      if ((dto as any).restDates) rule.restDates = (dto as any).restDates;
 
       // If there's any structured content, stringify it into pattern
-      if (Object.keys(rule).length) {
-        payload.pattern = JSON.stringify(rule);
-      } else {
-        payload.pattern = '';
-      }
+      if (Object.keys(rule).length) payload.pattern = JSON.stringify(rule);
+      else payload.pattern = '';
     }
 
     return this.scheduleRuleRepo.create(payload as any);
+  }
+
+  /**
+   * Determine whether an assignment has a rest/holiday on the given date.
+   * Returns true when the date is either a holiday or matches the schedule rule's rest definition.
+   */
+  async isAssignmentRest(assignmentId: string, date: string) {
+    const d = new Date(date);
+
+    // 1) holidays take precedence
+    try {
+      const holidays = await this.isHoliday(date);
+      if (holidays && Array.isArray(holidays) && holidays.length) return true;
+    } catch (e) {
+      // ignore holiday check failures and continue
+    }
+
+    // 2) schedule rule-based weekly/rest dates
+    if (!this.scheduleRuleRepo) return false;
+
+    const assignment = await this.shiftAssignmentRepo.findById(assignmentId as any);
+    if (!assignment) return false;
+
+    const scheduleRuleId = (assignment as any).scheduleRuleId;
+    if (!scheduleRuleId) return false;
+
+    const rule = await this.scheduleRuleRepo.findById(scheduleRuleId as any);
+    if (!rule) return false;
+
+    // try to decode pattern as JSON first
+    let parsed: any = null;
+    if (rule.pattern) {
+      try {
+        parsed = JSON.parse(rule.pattern);
+      } catch (e) {
+        parsed = null;
+      }
+    }
+
+    // check weeklyRestDays in parsed pattern or on dto-like fields
+    const weeklyRest: number[] | undefined = parsed?.weeklyRestDays || (rule as any).weeklyRestDays || parsed?.weeklyDays || (rule as any).weeklyDays;
+    if (weeklyRest && Array.isArray(weeklyRest)) {
+      if (weeklyRest.includes(d.getDay())) return true;
+    }
+
+    // check explicit restDates
+    const restDates: string[] | undefined = parsed?.restDates || (rule as any).restDates;
+    if (restDates && Array.isArray(restDates)) {
+      const ds = d.toISOString().slice(0, 10);
+      if (restDates.includes(ds)) return true;
+    }
+
+    return false;
   }
 
   async getScheduleRules() {

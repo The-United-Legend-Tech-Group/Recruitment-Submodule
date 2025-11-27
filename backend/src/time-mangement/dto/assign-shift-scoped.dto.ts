@@ -46,6 +46,11 @@ export class AssignShiftScopedDto {
   @IsOptional()
   status?: ShiftAssignmentStatus;
 
+  @ApiProperty({ example: 'schedule-rule-id', required: false })
+  @IsOptional()
+  @IsString()
+  scheduleRuleId?: string;
+
   // Ensure at least one of employeeIds / departmentId / positionId is provided
   @ValidateIf((o) => !o.employeeIds)
   @IsOptional()
