@@ -325,7 +325,7 @@ export class TimeService {
         } else if (mode === 'floor') {
           targetMins = mins - remainder;
         }
-        const targetMs = targetMins * 60000 + (ms % 60000);
+        const targetMs = targetMins * 60000;
         return new Date(targetMs);
       };
 
