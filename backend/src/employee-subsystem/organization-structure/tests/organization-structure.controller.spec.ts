@@ -16,11 +16,32 @@ describe('OrganizationStructureController (unit)', () => {
 		submitChangeRequest: jest.fn(),
 		getOrganizationHierarchy: jest.fn(),
 		getManagerTeamStructure: jest.fn(),
+		deactivatePosition: jest.fn(),
+		removePosition: jest.fn(),
 	};
 
 	beforeEach(() => {
 		controller = new OrganizationStructureController(mockService as any);
 		jest.clearAllMocks();
+	});
+
+	it('deactivatePosition calls service and returns updated position', async () => {
+		const updated = { _id: 'pos-123', code: 'P-1', title: 'Old Role', isActive: false } as any;
+		mockService.deactivatePosition.mockResolvedValue(updated);
+
+		const result = await controller.deactivatePosition('pos-123');
+
+		expect(mockService.deactivatePosition).toHaveBeenCalledWith('pos-123');
+		expect(result).toBe(updated);
+	});
+
+	it('removePosition calls service to delete a position', async () => {
+		mockService.removePosition.mockResolvedValue(undefined);
+
+		const result = await controller.removePosition('pos-999');
+
+		expect(mockService.removePosition).toHaveBeenCalledWith('pos-999');
+		expect(result).toBeUndefined();
 	});
 
 	it('getManagerTeam returns manager team structure from service', async () => {

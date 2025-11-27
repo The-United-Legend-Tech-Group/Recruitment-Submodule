@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Param, Post, Body } from '@nestjs/common';
+import { Controller, Get, UseGuards, Param, Post, Body, Patch, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { OrganizationStructureService } from './organization-structure.service';
 import { ApiKeyGuard } from '../guards/api-key.guard';
@@ -101,5 +101,18 @@ export class OrganizationStructureController {
     @ApiResponse({ status: 200, description: "Manager's team structure", type: Object })
     async getManagerTeam(@Param('managerId') managerId: string): Promise<any> {
         return this.organizationStructureService.getManagerTeamStructure(managerId);
+    }
+
+    @Patch('positions/:id/deactivate')
+    @ApiOperation({ summary: 'Deactivate a position (mark as inactive)' })
+    @ApiResponse({ status: 200, description: 'Updated position', type: Position })
+    async deactivatePosition(@Param('id') id: string): Promise<Position> {
+        return this.organizationStructureService.deactivatePosition(id);
+    }
+
+    @Delete('positions/:id')
+    @ApiOperation({ summary: 'Remove a position if it has no assignments or employees' })
+    async removePosition(@Param('id') id: string): Promise<void> {
+        return this.organizationStructureService.removePosition(id);
     }
 }

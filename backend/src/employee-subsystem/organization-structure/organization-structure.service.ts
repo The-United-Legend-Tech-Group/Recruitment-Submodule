@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PositionRepository } from './repository/position.repository';
 import { Position } from './models/position.schema';
 import { InjectModel } from '@nestjs/mongoose';
@@ -16,6 +16,8 @@ export class OrganizationStructureService {
         private readonly changeRequestModel: Model<StructureChangeRequestDocument>,
         @InjectModel(EmployeeProfile.name)
         private readonly employeeModel: Model<EmployeeProfileDocument>,
+        @InjectModel(PositionAssignment.name)
+        private readonly positionAssignmentModel: Model<PositionAssignmentDocument>,
     ) { }
 
     async getOpenPositions(): Promise<Position[]> {
@@ -110,6 +112,40 @@ export class OrganizationStructureService {
         });
 
         return roots;
+    }
+
+    /**
+     * Deactivate a position (mark as inactive).
+     */
+    async deactivatePosition(id: string): Promise<Position> {
+        const pos = await this.positionRepository.findById(id);
+        if (!pos) throw new NotFoundException('Position not found');
+
+        const updated = await this.positionRepository.updateById(id, { $set: { isActive: false } });
+        if (!updated) throw new NotFoundException('Position not found');
+        return updated as any as Position;
+    }
+
+    /**
+     * Remove a position if it has no active assignments or employees tied to it.
+     */
+    async removePosition(id: string): Promise<void> {
+        const pos = await this.positionRepository.findById(id);
+        if (!pos) throw new NotFoundException('Position not found');
+
+        // Check for employees assigned to this position
+        const employee = await this.employeeModel.findOne({ primaryPositionId: pos._id }).lean().exec();
+        if (employee) {
+            throw new BadRequestException('Cannot remove position: employee(s) assigned to this position');
+        }
+
+        // Check for position assignments
+        const assignment = await this.positionAssignmentModel.findOne({ positionId: pos._id }).lean().exec();
+        if (assignment) {
+            throw new BadRequestException('Cannot remove position: existing position assignment records found');
+        }
+
+        await this.positionRepository.deleteById(id);
     }
 
     /**
