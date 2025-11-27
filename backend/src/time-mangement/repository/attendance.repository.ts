@@ -15,10 +15,11 @@ export class AttendanceRepository extends BaseRepository<AttendanceRecordDocumen
     super(model);
   }
 
-  findForDay(employeeId: string, start: Date, end: Date) {
+  findForDay(employeeId: string, date: Date) {
+    // Assumes AttendanceRecord schema has a `date` field set to midnight for the day
     return this.findOne({
       employeeId,
-      'punches.time': { $gte: start, $lte: end },
+      date,
     } as any);
   }
 }
