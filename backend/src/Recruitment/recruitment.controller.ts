@@ -45,36 +45,7 @@ export class RecruitmentController {
   //HELPS IN Doing REC-0023
   @ApiOperation({ summary: 'Update job requisition by ID' })
   @ApiParam({ name: 'requisitionid', description: 'Job requisition ID', example: 'REQ-2024-001' })
-  @ApiBody({ 
-    type: UpdateJobRequisitionDto,
-    examples: {
-      'Update Status': {
-        summary: 'Update requisition status to published',
-        value: {
-          publishStatus: 'published',
-          postingDate: '2024-12-01T09:00:00.000Z'
-        }
-      },
-      'Update Openings': {
-        summary: 'Increase number of openings',
-        value: {
-          openings: 5,
-          location: 'Remote (US Only)'
-        }
-      },
-      'Complete Update': {
-        summary: 'Update multiple fields',
-        value: {
-          templateId: '507f1f77bcf86cd799439011',
-          openings: 3,
-          location: 'San Francisco, CA (On-site)',
-          publishStatus: 'published',
-          postingDate: '2024-12-01T09:00:00.000Z',
-          expiryDate: '2025-01-15T23:59:59.000Z'
-        }
-      }
-    }
-  })
+  @ApiBody({ type: UpdateJobRequisitionDto })
   @ApiResponse({ status: 200, description: 'Job requisition updated successfully' })
   @ApiResponse({ status: 404, description: 'Job requisition not found' })
   @Patch('Rrequisition/:requisitionid')
@@ -109,6 +80,7 @@ export class RecruitmentController {
   async createApplication(@Body() createApplicationDto: CreateApplicationDto): Promise<ApplicationDocument> {
     return this.recruitmentService.createApplication(createApplicationDto);
   }
+  //REC-017 part 1
   @ApiOperation({ summary: 'Get all applications for a specific candidate' })
   @ApiParam({ name: 'candidateId', description: 'Candidate MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
   @ApiResponse({ status: 200, description: 'List of candidate applications', type: [Object] })
@@ -118,7 +90,7 @@ export class RecruitmentController {
     return this.recruitmentService.getallcandidateApplications(candidateId);
   }
 
-  //REC-017: Update Application Status/Stage
+  //REC-017 part 2: Update Application Status/Stage
   @ApiOperation({ summary: 'Update application status and stage' })
   @ApiParam({ name: 'candidateId', description: 'Candidate MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
   @ApiParam({ name: 'requisitionId', description: 'Job requisition ID (user-defined)', example: 'REQ-2024-001' })
