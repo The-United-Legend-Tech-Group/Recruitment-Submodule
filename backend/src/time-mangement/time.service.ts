@@ -325,7 +325,7 @@ export class TimeService {
         } else if (mode === 'floor') {
           targetMins = mins - remainder;
         }
-        const targetMs = targetMins * 60000 + (ms % 60000);
+        const targetMs = targetMins * 60000;
         return new Date(targetMs);
       };
 
@@ -451,8 +451,6 @@ export class TimeService {
       status: 'SUBMITTED',
     };
 
-    if (dto.punches) payload.punches = dto.punches;
-    if (dto.source) payload.source = dto.source;
 
     const created = await this.attendanceCorrectionRepo.create(payload as any);
 
