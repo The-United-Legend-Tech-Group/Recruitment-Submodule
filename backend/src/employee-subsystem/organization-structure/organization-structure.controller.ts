@@ -8,7 +8,10 @@ import { authorizationGuard } from '../guards/authorization.guard';
 import { Roles, Role } from '../employee/decorators/roles.decorator';
 import { StructureChangeRequest } from './models/structure-change-request.schema';
 import { CreateStructureChangeRequestDto } from './dto/create-structure-change-request.dto';
+import { CreateDepartmentDto } from './dto/create-department.dto';
+import { CreatePositionDto } from './dto/create-position.dto';
 import { Position } from './models/position.schema';
+import { Department } from './models/department.schema';
 
 @ApiTags('Organization Structure')
 @Controller('organization-structure')
@@ -112,11 +115,53 @@ export class OrganizationStructureController {
         return this.organizationStructureService.deactivatePosition(id);
     }
 
+    @Post('departments')
+    @ApiOperation({ summary: 'Create a department' })
+    @ApiResponse({ status: 201, description: 'Created department', type: Department })
+    async createDepartment(@Body() dto: CreateDepartmentDto): Promise<any> {
+        return this.organizationStructureService.createDepartment(dto as any);
+    }
+
+    @Get('departments')
+    @ApiOperation({ summary: 'List departments' })
+    @ApiResponse({ status: 200, description: 'List of departments', type: [Department] })
+    async listDepartments(): Promise<any[]> {
+        return this.organizationStructureService.listDepartments();
+    }
+
+    @Get('departments/:id')
+    @ApiOperation({ summary: 'Get department by id' })
+    @ApiResponse({ status: 200, description: 'Department', type: Department })
+    async getDepartment(@Param('id') id: string): Promise<any> {
+        return this.organizationStructureService.getDepartmentById(id);
+    }
+
     @Patch('positions/:id')
     @ApiOperation({ summary: 'Update a position' })
     @ApiResponse({ status: 200, description: 'Updated position', type: Position })
     async updatePosition(@Param('id') id: string, @Body() dto: UpdatePositionDto): Promise<Position> {
         return this.organizationStructureService.updatePosition(id, dto as any);
+    }
+
+    @Post('positions')
+    @ApiOperation({ summary: 'Create a position' })
+    @ApiResponse({ status: 201, description: 'Created position', type: Position })
+    async createPosition(@Body() dto: CreatePositionDto): Promise<any> {
+        return this.organizationStructureService.createPosition(dto as any);
+    }
+
+    @Get('positions')
+    @ApiOperation({ summary: 'List positions' })
+    @ApiResponse({ status: 200, description: 'List of positions', type: [Position] })
+    async listPositions(): Promise<any[]> {
+        return this.organizationStructureService.listPositions();
+    }
+
+    @Get('positions/:id')
+    @ApiOperation({ summary: 'Get position by id' })
+    @ApiResponse({ status: 200, description: 'Position', type: Position })
+    async getPosition(@Param('id') id: string): Promise<any> {
+        return this.organizationStructureService.getPositionById(id);
     }
 
     @Delete('positions/:id')

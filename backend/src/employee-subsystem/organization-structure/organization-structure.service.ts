@@ -248,4 +248,63 @@ export class OrganizationStructureService {
 
         return { manager: { _id: manager._id, employeeNumber: manager.employeeNumber, firstName: manager.firstName, lastName: manager.lastName, primaryPositionId: manager.primaryPositionId }, team: root };
     }
+
+    /**
+     * Create a new department
+     */
+    async createDepartment(dto: any): Promise<any> {
+        // basic validation
+        if (!dto || !dto.code || !dto.name) {
+            throw new BadRequestException('Department code and name are required');
+        }
+
+        return this.departmentRepository.create(dto as any);
+    }
+
+    /**
+     * List departments
+     */
+    async listDepartments(): Promise<any[]> {
+        return this.departmentRepository.find({});
+    }
+
+    /**
+     * Get a department by id
+     */
+    async getDepartmentById(id: string): Promise<any> {
+        const dept = await this.departmentRepository.findById(id);
+        if (!dept) throw new NotFoundException('Department not found');
+        return dept;
+    }
+
+    /**
+     * Create a new position
+     */
+    async createPosition(dto: any): Promise<any> {
+        if (!dto || !dto.code || !dto.title || !dto.departmentId) {
+            throw new BadRequestException('Position code, title and departmentId are required');
+        }
+
+        // ensure department exists
+        const dept = await this.departmentRepository.findById(dto.departmentId);
+        if (!dept) throw new BadRequestException('Department not found for provided departmentId');
+
+        return this.positionRepository.create(dto as any);
+    }
+
+    /**
+     * List positions
+     */
+    async listPositions(): Promise<any[]> {
+        return this.positionRepository.find({});
+    }
+
+    /**
+     * Get a position by id
+     */
+    async getPositionById(id: string): Promise<any> {
+        const pos = await this.positionRepository.findById(id);
+        if (!pos) throw new NotFoundException('Position not found');
+        return pos;
+    }
 }

@@ -20,6 +20,12 @@ describe('OrganizationStructureController (unit)', () => {
 		updatePosition: jest.fn(),
 		removePosition: jest.fn(),
 		updateDepartment: jest.fn(),
+		createDepartment: jest.fn(),
+		listDepartments: jest.fn(),
+		getDepartmentById: jest.fn(),
+		createPosition: jest.fn(),
+		listPositions: jest.fn(),
+		getPositionById: jest.fn(),
 	};
 
 	beforeEach(() => {
@@ -168,6 +174,68 @@ describe('OrganizationStructureController (unit)', () => {
 
 		expect(mockService.updateDepartment).toHaveBeenCalledWith('dep-1', dto);
 		expect(result).toBe(updated);
+	});
+
+	it('createDepartment calls service and returns created department', async () => {
+		const dto = { code: 'D-2', name: 'Finance' } as any;
+		const created = { _id: 'dep-2', ...dto } as any;
+		mockService.createDepartment.mockResolvedValue(created);
+
+		const result = await controller.createDepartment(dto);
+
+		expect(mockService.createDepartment).toHaveBeenCalledWith(dto);
+		expect(result).toBe(created);
+	});
+
+	it('listDepartments returns departments from service', async () => {
+		const list = [ { _id: 'dep-1', code: 'D-1', name: 'HR' } ] as any[];
+		mockService.listDepartments.mockResolvedValue(list);
+
+		const result = await controller.listDepartments();
+
+		expect(mockService.listDepartments).toHaveBeenCalled();
+		expect(result).toBe(list);
+	});
+
+	it('getDepartment returns department by id', async () => {
+		const dept = { _id: 'dep-1', code: 'D-1', name: 'HR' } as any;
+		mockService.getDepartmentById.mockResolvedValue(dept);
+
+		const result = await controller.getDepartment('dep-1');
+
+		expect(mockService.getDepartmentById).toHaveBeenCalledWith('dep-1');
+		expect(result).toBe(dept);
+	});
+
+	it('createPosition calls service and returns created position', async () => {
+		const dto = { code: 'P-10', title: 'Developer', departmentId: 'dep-1' } as any;
+		const created = { _id: 'pos-10', ...dto } as any;
+		mockService.createPosition.mockResolvedValue(created);
+
+		const result = await controller.createPosition(dto);
+
+		expect(mockService.createPosition).toHaveBeenCalledWith(dto);
+		expect(result).toBe(created);
+	});
+
+	it('listPositions returns positions from service', async () => {
+		const list = [ { _id: 'pos-1', code: 'P-1', title: 'Dev' } ] as any[];
+		mockService.listPositions.mockResolvedValue(list);
+
+		const result = await controller.listPositions();
+
+		expect(mockService.listPositions).toHaveBeenCalled();
+		expect(result).toBe(list);
+	});
+
+	it('getPosition returns position by id', async () => {
+		const pos = { _id: 'pos-1', code: 'P-1', title: 'Dev' } as any;
+		mockService.getPositionById.mockResolvedValue(pos);
+
+		const result = await controller.getPosition('pos-1');
+
+		expect(mockService.getPositionById).toHaveBeenCalledWith('pos-1');
+		expect(result).toBe(pos);
 	});
 
 });
