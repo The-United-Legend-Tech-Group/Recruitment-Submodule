@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PositionRepository } from './repository/position.repository';
+import { DepartmentRepository } from './repository/department.repository';
 import { Position } from './models/position.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -12,6 +13,7 @@ import { PositionAssignment, PositionAssignmentDocument } from './models/positio
 export class OrganizationStructureService {
     constructor(
         private readonly positionRepository: PositionRepository,
+            private readonly departmentRepository: DepartmentRepository,
         @InjectModel(StructureChangeRequest.name)
         private readonly changeRequestModel: Model<StructureChangeRequestDocument>,
         @InjectModel(EmployeeProfile.name)
@@ -124,6 +126,30 @@ export class OrganizationStructureService {
         const updated = await this.positionRepository.updateById(id, { $set: { isActive: false } });
         if (!updated) throw new NotFoundException('Position not found');
         return updated as any as Position;
+    }
+
+    /**
+     * Update a position's mutable fields
+     */
+    async updatePosition(id: string, dto: any): Promise<Position> {
+        const pos = await this.positionRepository.findById(id);
+        if (!pos) throw new NotFoundException('Position not found');
+
+        const updated = await this.positionRepository.updateById(id, { $set: dto });
+        if (!updated) throw new NotFoundException('Position not found');
+        return updated as any as Position;
+    }
+
+    /**
+     * Update a department's mutable fields
+     */
+    async updateDepartment(id: string, dto: any): Promise<any> {
+        const dept = await this.departmentRepository.findById(id);
+        if (!dept) throw new NotFoundException('Department not found');
+
+        const updated = await this.departmentRepository.updateById(id, { $set: dto });
+        if (!updated) throw new NotFoundException('Department not found');
+        return updated;
     }
 
     /**

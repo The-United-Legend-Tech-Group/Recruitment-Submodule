@@ -8,6 +8,7 @@ import { EmployeeProfile, EmployeeProfileSchema } from '../employee/models/emplo
 import { OrganizationStructureController } from './organization-structure.controller';
 import { OrganizationStructureService } from './organization-structure.service';
 import { PositionRepository } from './repository/position.repository';
+import { DepartmentRepository } from './repository/department.repository';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { PositionRepository } from './repository/position.repository';
     ]),
   ],
   controllers: [OrganizationStructureController],
-  providers: [OrganizationStructureService, PositionRepository],
-  exports: [OrganizationStructureService, PositionRepository],
+  providers: [OrganizationStructureService, PositionRepository, DepartmentRepository],
+  exports: [OrganizationStructureService, PositionRepository, DepartmentRepository],
 })
 export class OrganizationStructureModule { }

@@ -1,6 +1,8 @@
 import { Controller, Get, UseGuards, Param, Post, Body, Patch, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
 import { OrganizationStructureService } from './organization-structure.service';
+import { UpdateDepartmentDto } from './dto/update-department.dto';
+import { UpdatePositionDto } from './dto/update-position.dto';
 import { ApiKeyGuard } from '../guards/api-key.guard';
 import { authorizationGuard } from '../guards/authorization.guard';
 import { Roles, Role } from '../employee/decorators/roles.decorator';
@@ -110,9 +112,23 @@ export class OrganizationStructureController {
         return this.organizationStructureService.deactivatePosition(id);
     }
 
+    @Patch('positions/:id')
+    @ApiOperation({ summary: 'Update a position' })
+    @ApiResponse({ status: 200, description: 'Updated position', type: Position })
+    async updatePosition(@Param('id') id: string, @Body() dto: UpdatePositionDto): Promise<Position> {
+        return this.organizationStructureService.updatePosition(id, dto as any);
+    }
+
     @Delete('positions/:id')
     @ApiOperation({ summary: 'Remove a position if it has no assignments or employees' })
     async removePosition(@Param('id') id: string): Promise<void> {
         return this.organizationStructureService.removePosition(id);
+    }
+
+    @Patch('departments/:id')
+    @ApiOperation({ summary: 'Update a department' })
+    @ApiResponse({ status: 200, description: 'Updated department', type: Object })
+    async updateDepartment(@Param('id') id: string, @Body() dto: UpdateDepartmentDto): Promise<any> {
+        return this.organizationStructureService.updateDepartment(id, dto as any);
     }
 }

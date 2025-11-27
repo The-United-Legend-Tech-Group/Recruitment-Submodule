@@ -17,7 +17,9 @@ describe('OrganizationStructureController (unit)', () => {
 		getOrganizationHierarchy: jest.fn(),
 		getManagerTeamStructure: jest.fn(),
 		deactivatePosition: jest.fn(),
+		updatePosition: jest.fn(),
 		removePosition: jest.fn(),
+		updateDepartment: jest.fn(),
 	};
 
 	beforeEach(() => {
@@ -145,4 +147,27 @@ describe('OrganizationStructureController (unit)', () => {
 		expect(mockService.submitChangeRequest).toHaveBeenCalledWith(dto);
 		expect(result).toBe(saved);
 	});
+
+	it('updatePosition calls service and returns updated position', async () => {
+		const updated = { _id: 'pos-234', code: 'P-2', title: 'New Role', isActive: true } as any;
+		mockService.updatePosition.mockResolvedValue(updated);
+
+		const dto = { title: 'New Role', isActive: true } as any;
+		const result = await controller.updatePosition('pos-234', dto);
+
+		expect(mockService.updatePosition).toHaveBeenCalledWith('pos-234', dto);
+		expect(result).toBe(updated);
+	});
+
+	it('updateDepartment calls service and returns updated department', async () => {
+		const updated = { _id: 'dep-1', code: 'D-1', name: 'HR', isActive: true } as any;
+		mockService.updateDepartment.mockResolvedValue(updated);
+
+		const dto = { name: 'HR', isActive: true } as any;
+		const result = await controller.updateDepartment('dep-1', dto);
+
+		expect(mockService.updateDepartment).toHaveBeenCalledWith('dep-1', dto);
+		expect(result).toBe(updated);
+	});
+
 });
