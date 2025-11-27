@@ -191,9 +191,15 @@ export class TimeService {
   async createHoliday(dto: CreateHolidayDto) {
     if (!this.holidayRepo) throw new Error('HolidayRepository not available');
     // Helper: parse optional permission dates
-    const permContractStart = dto.contractStart ? new Date(dto.contractStart) : undefined;
-    const permProbationEnd = dto.probationEnd ? new Date(dto.probationEnd) : undefined;
-    const permFinancialYearStart = dto.financialYearStart ? new Date(dto.financialYearStart) : undefined;
+    const permContractStart = dto.contractStart
+      ? new Date(dto.contractStart)
+      : undefined;
+    const permProbationEnd = dto.probationEnd
+      ? new Date(dto.probationEnd)
+      : undefined;
+    const permFinancialYearStart = dto.financialYearStart
+      ? new Date(dto.financialYearStart)
+      : undefined;
 
     const validatePermissions = (dateToCheck: Date) => {
       if (permContractStart && dateToCheck < permContractStart) {
@@ -212,13 +218,13 @@ export class TimeService {
       const from = dto.weeklyFrom
         ? new Date(dto.weeklyFrom)
         : dto.startDate
-        ? new Date(dto.startDate)
-        : new Date();
+          ? new Date(dto.startDate)
+          : new Date();
       const to = dto.weeklyTo
         ? new Date(dto.weeklyTo)
         : dto.endDate
-        ? new Date(dto.endDate)
-        : new Date(from.getTime() + 365 * 24 * 3600 * 1000);
+          ? new Date(dto.endDate)
+          : new Date(from.getTime() + 365 * 24 * 3600 * 1000);
 
       const created: any[] = [];
       // iterate days from 'from' to 'to'
