@@ -8,7 +8,12 @@ import { ScheduleRuleRepository } from './repository/schedule-rule.repository';
 import { CreateScheduleRuleDto } from './dto/create-schedule-rule.dto';
 import { HolidayRepository } from './repository/holiday.repository';
 import { CreateHolidayDto } from './dto/create-holiday.dto';
-import { HolidayType } from './models/enums/index';
+import { AttendanceRepository } from './repository/attendance.repository';
+import { PunchType, PunchPolicy, HolidayType } from './models/enums/index';
+import { PunchDto } from './dto/punch.dto';
+import { CreateAttendanceCorrectionDto } from './dto/create-attendance-correction.dto';
+import { AttendanceCorrectionRepository } from './repository/attendance-correction.repository';
+import { CorrectionAuditRepository } from './repository/correction-audit.repository';
 
 @Injectable()
 export class TimeService {
@@ -17,6 +22,9 @@ export class TimeService {
     private readonly shiftAssignmentRepo: ShiftAssignmentRepository,
     private readonly scheduleRuleRepo?: ScheduleRuleRepository,
     private readonly holidayRepo?: HolidayRepository,
+    private readonly attendanceRepo?: AttendanceRepository,
+    private readonly attendanceCorrectionRepo?: AttendanceCorrectionRepository,
+    private readonly correctionAuditRepo?: CorrectionAuditRepository,
   ) {}
 
   /* Existing simple time record creation kept for backwards compatibility */
@@ -358,5 +366,236 @@ export class TimeService {
   }
   async getAllShifts() {
     return this.shiftRepo.find({});
+  }
+
+  /**
+   * Record a punch (clock-in / clock-out) for an employee.
+   * If there is an attendance record for the same day, append punch; otherwise create a new record.
+   * Computes `totalWorkMinutes` by pairing IN and OUT punches sequentially.
+   */
+  async punch(dto: PunchDto) {
+    if (!this.attendanceRepo)
+      throw new Error('AttendanceRepository not available');
+
+    // determine timestamp and apply optional rounding
+    let ts = dto.time ? new Date(dto.time) : new Date();
+    if (dto.roundMode && dto.intervalMinutes && dto.intervalMinutes > 0) {
+      const roundToInterval = (
+        d: Date,
+        intervalMinutes: number,
+        mode: 'nearest' | 'ceil' | 'floor',
+      ) => {
+        const ms = d.getTime();
+        const mins = Math.floor(ms / 60000);
+        const remainder = mins % intervalMinutes;
+        let targetMins = mins;
+        if (mode === 'nearest') {
+          targetMins =
+            mins -
+            remainder +
+            (remainder >= intervalMinutes / 2 ? intervalMinutes : 0);
+        } else if (mode === 'ceil') {
+          targetMins =
+            remainder === 0 ? mins : mins - remainder + intervalMinutes;
+        } else if (mode === 'floor') {
+          targetMins = mins - remainder;
+        }
+        const targetMs = targetMins * 60000;
+        return new Date(targetMs);
+      };
+
+      ts = roundToInterval(ts, dto.intervalMinutes, dto.roundMode as any);
+    }
+    const startOfDay = new Date(ts);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(ts);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const existing = await this.attendanceRepo.findForDay(
+      dto.employeeId,
+      startOfDay,
+      endOfDay,
+    );
+
+    const punch = { type: dto.type, time: ts } as any;
+
+    if (!existing) {
+      const payload: any = {
+        employeeId: dto.employeeId,
+        punches: [punch],
+        totalWorkMinutes: 0,
+        hasMissedPunch: false,
+        exceptionIds: [],
+        finalisedForPayroll: false,
+      };
+      return this.attendanceRepo.create(payload as any);
+    }
+
+    const punches = (existing.punches || []).slice();
+    punches.push(punch);
+    punches.sort(
+      (a: any, b: any) =>
+        new Date(a.time).getTime() - new Date(b.time).getTime(),
+    );
+    // determine policy
+    const policy = dto.policy || PunchPolicy.MULTIPLE;
+
+    let totalMinutes = 0;
+    let missed = false;
+    let finalPunches: any[] = punches;
+
+    if (policy === PunchPolicy.MULTIPLE) {
+      // compute total minutes by pairing IN -> OUT sequentially
+      for (let i = 0; i < punches.length; ) {
+        const current = punches[i];
+        if (current.type === PunchType.IN) {
+          // look for next OUT
+          if (i + 1 < punches.length && punches[i + 1].type === PunchType.OUT) {
+            const inT = new Date(punches[i].time).getTime();
+            const outT = new Date(punches[i + 1].time).getTime();
+            const diffMin = Math.max(0, Math.round((outT - inT) / 60000));
+            totalMinutes += diffMin;
+            i += 2;
+          } else {
+            // unmatched IN
+            missed = true;
+            i += 1;
+          }
+        } else {
+          // OUT without preceding IN
+          missed = true;
+          i += 1;
+        }
+      }
+    } else if (policy === PunchPolicy.FIRST_LAST) {
+      // pick earliest IN and latest OUT
+      const ins = punches
+        .filter((p) => p.type === PunchType.IN)
+        .map((p) => p.time);
+      const outs = punches
+        .filter((p) => p.type === PunchType.OUT)
+        .map((p) => p.time);
+      if (ins.length && outs.length) {
+        const earliestIn = new Date(
+          Math.min(...ins.map((d: any) => new Date(d).getTime())),
+        );
+        const latestOut = new Date(
+          Math.max(...outs.map((d: any) => new Date(d).getTime())),
+        );
+        totalMinutes = Math.max(
+          0,
+          Math.round((latestOut.getTime() - earliestIn.getTime()) / 60000),
+        );
+        finalPunches = [
+          { type: PunchType.IN, time: earliestIn },
+          { type: PunchType.OUT, time: latestOut },
+        ];
+        missed = false;
+      } else {
+        // missing either IN or OUT
+        missed = true;
+        totalMinutes = 0;
+        finalPunches = punches.slice();
+      }
+    } else if (policy === PunchPolicy.ONLY_FIRST) {
+      // keep only the first (earliest) punch and mark missed
+      const first = punches[0];
+      finalPunches = first ? [first] : [];
+      totalMinutes = 0;
+      missed = true;
+    }
+
+    const update: any = {
+      punches: finalPunches,
+      totalWorkMinutes: totalMinutes,
+      hasMissedPunch: missed,
+    };
+
+    return this.attendanceRepo.updateById((existing as any)._id, update as any);
+  }
+
+  /** Submit an attendance correction request (Line Manager or employee) */
+  async submitAttendanceCorrection(dto: CreateAttendanceCorrectionDto) {
+    if (!this.attendanceCorrectionRepo)
+      throw new Error('AttendanceCorrectionRepository not available');
+
+    const payload: any = {
+      employeeId: dto.employeeId,
+      attendanceRecord: dto.attendanceRecordId,
+      reason: dto.reason,
+      status: 'SUBMITTED',
+    };
+
+
+    const created = await this.attendanceCorrectionRepo.create(payload as any);
+
+    // audit
+    if (this.correctionAuditRepo) {
+      await this.correctionAuditRepo.create({
+        correctionRequestId: created._id,
+        performedBy: created.employeeId,
+        action: 'SUBMITTED',
+        details: { reason: dto.reason },
+      } as any);
+    }
+
+    return created;
+  }
+
+  /** Approve and apply a correction: manager applies proposed punches to the attendance record */
+  async approveAndApplyCorrection(correctionId: string, approverId: string) {
+    if (!this.attendanceCorrectionRepo)
+      throw new Error('AttendanceCorrectionRepository not available');
+    if (!this.attendanceRepo)
+      throw new Error('AttendanceRepository not available');
+
+    const req = (await this.attendanceCorrectionRepo.findById(
+      correctionId,
+    )) as any;
+    if (!req) throw new Error('Correction request not found');
+
+    // ensure punches present in request (or fail)
+    const punches = req.punches || [];
+
+    const attendanceId = (req.attendanceRecord as any) || null;
+    if (!attendanceId)
+      throw new Error(
+        'AttendanceRecord reference missing on correction request',
+      );
+
+    // Verify that the attendance record belongs to the same employee as the correction request
+    const attendance = (await this.attendanceRepo.findById(
+      attendanceId,
+    )) as any;
+    if (
+      !attendance ||
+      (attendance.employeeId &&
+        attendance.employeeId.toString() !== req.employeeId.toString())
+    ) {
+      throw new Error('Attendance record does not match employee');
+    }
+
+    // Update attendance record punches and recompute totals by delegating to attendanceRepo.updateById
+    const updated = await this.attendanceRepo.updateById(attendanceId, {
+      punches,
+    } as any);
+
+    // mark correction request as approved
+    const updatedReq = await this.attendanceCorrectionRepo.updateById(
+      correctionId,
+      { status: 'APPROVED' } as any,
+    );
+
+    // audit
+    if (this.correctionAuditRepo) {
+      await this.correctionAuditRepo.create({
+        correctionRequestId: correctionId,
+        performedBy: approverId,
+        action: 'APPROVED',
+        details: { appliedTo: attendanceId },
+      } as any);
+    }
+
+    return { updatedAttendance: updated, correction: updatedReq };
   }
 }

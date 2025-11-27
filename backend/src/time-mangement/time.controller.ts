@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { TimeService } from './time.service';
+import { PunchDto } from './dto/punch.dto';
 import { CreateShiftDto } from './dto/create-shift.dto';
 import { AssignShiftDto } from './dto/assign-shift.dto';
 import { UpdateShiftStatusDto } from './dto/update-shift-status.dto';
@@ -16,6 +17,8 @@ import { AssignShiftScopedDto } from './dto/assign-shift-scoped.dto';
 import { UpdateShiftAssignmentsStatusDto } from './dto/update-shift-assignments-status.dto';
 import { CreateScheduleRuleDto } from './dto/create-schedule-rule.dto';
 import { CreateHolidayDto } from './dto/create-holiday.dto';
+import { CreateAttendanceCorrectionDto } from './dto/create-attendance-correction.dto';
+import { ApproveAttendanceCorrectionDto } from './dto/approve-attendance-correction.dto';
 
 @ApiTags('time')
 @Controller('time')
@@ -119,5 +122,28 @@ export class TimeController {
   @ApiOperation({ summary: 'Check if a date is a holiday / rest day' })
   isHoliday(@Query('date') date: string) {
     return this.service.isHoliday(date);
+  }
+
+  @Post('attendance/punch')
+  @ApiOperation({ summary: 'Record a clock in/out punch for an employee' })
+  recordPunch(@Body() dto: PunchDto) {
+    return this.service.punch(dto as any);
+  }
+
+  @Post('attendance/corrections')
+  @ApiOperation({ summary: 'Submit an attendance correction request' })
+  submitCorrection(@Body() dto: CreateAttendanceCorrectionDto) {
+    return this.service.submitAttendanceCorrection(dto as any);
+  }
+
+  @Patch('attendance/corrections/:id/approve')
+  @ApiOperation({
+    summary: 'Approve and apply an attendance correction request',
+  })
+  approveCorrection(
+    @Param('id') id: string,
+    @Body() dto: ApproveAttendanceCorrectionDto,
+  ) {
+    return this.service.approveAndApplyCorrection(id, dto.approverId);
   }
 }
