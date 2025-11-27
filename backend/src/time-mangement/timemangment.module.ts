@@ -23,6 +23,16 @@ import { ShiftAssignmentRepository } from './repository/shift-assignment.reposit
 import { ScheduleRuleRepository } from './repository/schedule-rule.repository';
 import { HolidayRepository } from './repository/holiday.repository';
 import { AttendanceRepository } from './repository/attendance.repository';
+import { AttendanceCorrectionRepository } from './repository/attendance-correction.repository';
+import { CorrectionAuditRepository } from './repository/correction-audit.repository';
+import {
+  AttendanceCorrectionRequest,
+  AttendanceCorrectionRequestSchema,
+} from './models/attendance-correction-request.schema';
+import {
+  CorrectionAudit,
+  CorrectionAuditSchema,
+} from './models/correction-audit.schema';
 
 import { Holiday, HolidaySchema } from './models/holiday.schema';
 @Module({
@@ -31,6 +41,11 @@ import { Holiday, HolidaySchema } from './models/holiday.schema';
     // Register feature schemas local to the time-management subsystem
     MongooseModule.forFeature([
       { name: AttendanceRecord.name, schema: AttendanceRecordSchema },
+      {
+        name: AttendanceCorrectionRequest.name,
+        schema: AttendanceCorrectionRequestSchema,
+      },
+      { name: CorrectionAudit.name, schema: CorrectionAuditSchema },
       { name: ShiftAssignment.name, schema: ShiftAssignmentSchema },
       { name: Holiday.name, schema: HolidaySchema },
       { name: ShiftType.name, schema: ShiftTypeSchema },
@@ -46,6 +61,8 @@ import { Holiday, HolidaySchema } from './models/holiday.schema';
     ScheduleRuleRepository,
     HolidayRepository,
     AttendanceRepository,
+    AttendanceCorrectionRepository,
+    CorrectionAuditRepository,
   ],
   exports: [
     MongooseModule,
@@ -55,6 +72,8 @@ import { Holiday, HolidaySchema } from './models/holiday.schema';
     ScheduleRuleRepository,
     HolidayRepository,
     AttendanceRepository,
+    AttendanceCorrectionRepository,
+    CorrectionAuditRepository,
   ],
 })
 export class TimeMangementModule {}

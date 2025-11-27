@@ -12,6 +12,9 @@ import { HolidayType } from './models/enums/index';
 import { AttendanceRepository } from './repository/attendance.repository';
 import { PunchType, PunchPolicy } from './models/enums/index';
 import { PunchDto } from './dto/punch.dto';
+import { CreateAttendanceCorrectionDto } from './dto/create-attendance-correction.dto';
+import { AttendanceCorrectionRepository } from './repository/attendance-correction.repository';
+import { CorrectionAuditRepository } from './repository/correction-audit.repository';
 
 @Injectable()
 export class TimeService {
@@ -21,6 +24,8 @@ export class TimeService {
     private readonly scheduleRuleRepo?: ScheduleRuleRepository,
     private readonly holidayRepo?: HolidayRepository,
     private readonly attendanceRepo?: AttendanceRepository,
+    private readonly attendanceCorrectionRepo?: AttendanceCorrectionRepository,
+    private readonly correctionAuditRepo?: CorrectionAuditRepository,
   ) {}
 
   /* Existing simple time record creation kept for backwards compatibility */
@@ -453,5 +458,80 @@ export class TimeService {
     };
 
     return this.attendanceRepo.updateById((existing as any)._id, update as any);
+  }
+
+  /** Submit an attendance correction request (Line Manager or employee) */
+  async submitAttendanceCorrection(dto: CreateAttendanceCorrectionDto) {
+    if (!this.attendanceCorrectionRepo)
+      throw new Error('AttendanceCorrectionRepository not available');
+
+    const payload: any = {
+      employeeId: dto.employeeId,
+      attendanceRecord: dto.attendanceRecordId,
+      reason: dto.reason,
+      status: 'SUBMITTED',
+    };
+
+    if (dto.punches) payload.punches = dto.punches;
+    if (dto.source) payload.source = dto.source;
+
+    const created = await this.attendanceCorrectionRepo.create(payload as any);
+
+    // audit
+    if (this.correctionAuditRepo) {
+      await this.correctionAuditRepo.create({
+        correctionRequestId: created._id,
+        performedBy: created.employeeId,
+        action: 'SUBMITTED',
+        details: { reason: dto.reason },
+      } as any);
+    }
+
+    return created;
+  }
+
+  /** Approve and apply a correction: manager applies proposed punches to the attendance record */
+  async approveAndApplyCorrection(correctionId: string, approverId: string) {
+    if (!this.attendanceCorrectionRepo)
+      throw new Error('AttendanceCorrectionRepository not available');
+    if (!this.attendanceRepo)
+      throw new Error('AttendanceRepository not available');
+
+    const req = (await this.attendanceCorrectionRepo.findById(
+      correctionId,
+    )) as any;
+    if (!req) throw new Error('Correction request not found');
+
+    // ensure punches present in request (or fail)
+    const punches = req.punches || [];
+
+    const attendanceId = (req.attendanceRecord as any) || null;
+    if (!attendanceId)
+      throw new Error(
+        'AttendanceRecord reference missing on correction request',
+      );
+
+    // Update attendance record punches and recompute totals by delegating to attendanceRepo.updateById
+    const updated = await this.attendanceRepo.updateById(attendanceId, {
+      punches,
+    } as any);
+
+    // mark correction request as approved
+    const updatedReq = await this.attendanceCorrectionRepo.updateById(
+      correctionId,
+      { status: 'APPROVED' } as any,
+    );
+
+    // audit
+    if (this.correctionAuditRepo) {
+      await this.correctionAuditRepo.create({
+        correctionRequestId: correctionId,
+        performedBy: approverId,
+        action: 'APPROVED',
+        details: { appliedTo: attendanceId },
+      } as any);
+    }
+
+    return { updatedAttendance: updated, correction: updatedReq };
   }
 }
