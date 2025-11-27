@@ -31,6 +31,11 @@ describe('TimeService - ScheduleRule flows', () => {
         }),
       ),
       find: jest.fn().mockResolvedValue([]),
+      findById: jest
+        .fn()
+        .mockImplementation((id) =>
+          Promise.resolve({ _id: id, pattern: '{}', active: true }),
+        ),
     };
 
     mockShiftAssignmentRepo = {
@@ -38,6 +43,11 @@ describe('TimeService - ScheduleRule flows', () => {
         .fn()
         .mockImplementation((id, update) =>
           Promise.resolve({ _id: id, ...update }),
+        ),
+      findById: jest
+        .fn()
+        .mockImplementation((id) =>
+          Promise.resolve({ _id: id, scheduleRuleId: 'rule1' }),
         ),
     };
 
@@ -83,6 +93,64 @@ describe('TimeService - ScheduleRule flows', () => {
     expect(mockScheduleRuleRepo.find).toHaveBeenCalled();
     expect(results).toHaveLength(1);
     expect(results[0]).toHaveProperty('name', 'r1');
+  });
+
+  it('creates schedule rule with rest-only fields', async () => {
+    const dto = {
+      name: 'rest-only',
+      weeklyRestDays: [0, 6],
+      restDates: ['2025-12-25'],
+    } as any;
+
+    const res = await service.createScheduleRule(dto);
+    expect(mockScheduleRuleRepo.create).toHaveBeenCalled();
+    const calledArg = mockScheduleRuleRepo.create.mock.calls[0][0];
+    expect(calledArg).toHaveProperty('name', 'rest-only');
+    expect(typeof calledArg.pattern).toBe('string');
+    const parsed = JSON.parse(calledArg.pattern);
+    expect(parsed.weeklyRestDays).toEqual([0, 6]);
+    expect(parsed.restDates).toEqual(['2025-12-25']);
+    expect(res).toHaveProperty('_id', 'rule1');
+  });
+
+  it('isAssignmentRest checks weekly rest and explicit rest dates from schedule rule', async () => {
+    // assignment refers to rule1
+    mockShiftAssignmentRepo.findById.mockResolvedValueOnce({
+      _id: 'assign1',
+      scheduleRuleId: 'rule1',
+    });
+    // rule1 contains weeklyRestDays = [4] (Thursday) and an explicit date
+    const rulePayload = {
+      _id: 'rule1',
+      pattern: JSON.stringify({
+        weeklyRestDays: [4],
+        restDates: ['2025-12-25'],
+      }),
+      active: true,
+    };
+    mockScheduleRuleRepo.findById.mockResolvedValueOnce(rulePayload as any);
+
+    // 2025-11-27 is a Thursday -> should be rest
+    const isRestThu = await service.isAssignmentRest('assign1', '2025-11-27');
+    expect(isRestThu).toBe(true);
+
+    // explicit rest date 2025-12-25 -> should be rest
+    mockShiftAssignmentRepo.findById.mockResolvedValueOnce({
+      _id: 'assign1',
+      scheduleRuleId: 'rule1',
+    });
+    mockScheduleRuleRepo.findById.mockResolvedValueOnce(rulePayload as any);
+    const isRestXmas = await service.isAssignmentRest('assign1', '2025-12-25');
+    expect(isRestXmas).toBe(true);
+
+    // a non-rest date
+    mockShiftAssignmentRepo.findById.mockResolvedValueOnce({
+      _id: 'assign1',
+      scheduleRuleId: 'rule1',
+    });
+    mockScheduleRuleRepo.findById.mockResolvedValueOnce(rulePayload as any);
+    const isRestFri = await service.isAssignmentRest('assign1', '2025-11-28');
+    expect(isRestFri).toBe(false);
   });
 
   it('attaches a schedule rule to an assignment', async () => {
