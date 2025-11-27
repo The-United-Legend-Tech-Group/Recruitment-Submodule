@@ -9,7 +9,7 @@ import { CreateScheduleRuleDto } from './dto/create-schedule-rule.dto';
 import { HolidayRepository } from './repository/holiday.repository';
 import { CreateHolidayDto } from './dto/create-holiday.dto';
 import { AttendanceRepository } from './repository/attendance.repository';
-import { PunchType, PunchPolicy,HolidayType } from './models/enums/index';
+import { PunchType, PunchPolicy, HolidayType } from './models/enums/index';
 import { PunchDto } from './dto/punch.dto';
 import { CreateAttendanceCorrectionDto } from './dto/create-attendance-correction.dto';
 import { AttendanceCorrectionRepository } from './repository/attendance-correction.repository';
@@ -489,6 +489,18 @@ export class TimeService {
       throw new Error(
         'AttendanceRecord reference missing on correction request',
       );
+
+    // Verify that the attendance record belongs to the same employee as the correction request
+    const attendance = (await this.attendanceRepo.findById(
+      attendanceId,
+    )) as any;
+    if (
+      !attendance ||
+      (attendance.employeeId &&
+        attendance.employeeId.toString() !== req.employeeId.toString())
+    ) {
+      throw new Error('Attendance record does not match employee');
+    }
 
     // Update attendance record punches and recompute totals by delegating to attendanceRepo.updateById
     const updated = await this.attendanceRepo.updateById(attendanceId, {
