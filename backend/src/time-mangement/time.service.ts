@@ -428,26 +428,6 @@ export class TimeService {
       finalPunches = first ? [first] : [];
       totalMinutes = 0;
       missed = true;
-    } else {
-      // default fallback to MULTIPLE behavior
-      for (let i = 0; i < punches.length; ) {
-        const current = punches[i];
-        if (current.type === PunchType.IN) {
-          if (i + 1 < punches.length && punches[i + 1].type === PunchType.OUT) {
-            const inT = new Date(punches[i].time).getTime();
-            const outT = new Date(punches[i + 1].time).getTime();
-            const diffMin = Math.max(0, Math.round((outT - inT) / 60000));
-            totalMinutes += diffMin;
-            i += 2;
-          } else {
-            missed = true;
-            i += 1;
-          }
-        } else {
-          missed = true;
-          i += 1;
-        }
-      }
     }
 
     const update: any = {
