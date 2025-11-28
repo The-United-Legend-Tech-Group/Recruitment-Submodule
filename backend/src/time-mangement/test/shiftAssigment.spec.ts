@@ -44,10 +44,10 @@ describe('ShiftService / ShiftAssignmentService - Shift flows', () => {
     };
 
     shiftAssignmentService = new ShiftAssignmentService(
-      mockShiftAssignmentRepo as any,
+      mockShiftAssignmentRepo,
     );
     shiftService = new ShiftService(
-      mockShiftRepo as any,
+      mockShiftRepo,
       shiftAssignmentService as any,
     );
 

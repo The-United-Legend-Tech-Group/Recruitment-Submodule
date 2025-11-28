@@ -68,7 +68,7 @@ export class AttendanceService {
         exceptionIds: [],
         finalisedForPayroll: false,
       };
-      return this.attendanceRepo.create(payload as any);
+      return this.attendanceRepo.create(payload);
     }
 
     const punches = (existing.punches || []).slice();
@@ -143,7 +143,7 @@ export class AttendanceService {
       hasMissedPunch: missed,
     };
 
-    return this.attendanceRepo.updateById((existing as any)._id, update as any);
+    return this.attendanceRepo.updateById((existing as any)._id, update);
   }
 
   async createHoliday(dto: any) {
@@ -215,7 +215,7 @@ export class AttendanceService {
       active: dto.active !== undefined ? dto.active : true,
     };
 
-    return this.holidayRepo.create(payload as any);
+    return this.holidayRepo.create(payload);
   }
 
   async getHolidays() {
@@ -244,13 +244,13 @@ export class AttendanceService {
       status: 'SUBMITTED',
     };
 
-    const created = await this.attendanceCorrectionRepo.create(payload as any);
+    const created = await this.attendanceCorrectionRepo.create(payload);
 
     // Ephemeral audit: log the submission instead of persisting
     /* Auditing (ephemeral):
        correctionRequestId, performedBy (employee), action, details
        Persistence intentionally removed; log for debugging/ops instead. */
-    // eslint-disable-next-line no-console
+
     console.info('Audit: attendance-correction SUBMITTED', {
       correctionRequestId: created._id,
       performedBy: created.employeeId,
@@ -274,7 +274,7 @@ export class AttendanceService {
 
     const punches = req.punches || [];
 
-    const attendanceId = (req.attendanceRecord as any) || null;
+    const attendanceId = req.attendanceRecord || null;
     if (!attendanceId)
       throw new Error(
         'AttendanceRecord reference missing on correction request',
@@ -302,7 +302,7 @@ export class AttendanceService {
     );
 
     // Ephemeral audit: log the approval instead of persisting
-    // eslint-disable-next-line no-console
+
     console.info('Audit: attendance-correction APPROVED', {
       correctionRequestId: correctionId,
       performedBy: approverId,

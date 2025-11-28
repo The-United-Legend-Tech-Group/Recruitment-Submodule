@@ -14,7 +14,6 @@ import { DatabaseModule } from '../../database/database.module';
     OrganizationStructureModule,
     NotificationModule,
     AuthModule,
-
   ],
   controllers: [AppController],
   providers: [AppService],

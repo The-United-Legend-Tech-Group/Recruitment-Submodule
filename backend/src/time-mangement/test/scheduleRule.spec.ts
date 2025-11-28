@@ -57,12 +57,12 @@ describe('ShiftService - ScheduleRule flows', () => {
     mockShiftRepo = { find: jest.fn().mockResolvedValue([]) };
 
     shiftAssignmentService = new ShiftAssignmentService(
-      mockShiftAssignmentRepo as any,
+      mockShiftAssignmentRepo,
     );
     shiftService = new ShiftService(
-      mockShiftRepo as any,
+      mockShiftRepo,
       shiftAssignmentService as any,
-      mockScheduleRuleRepo as any,
+      mockScheduleRuleRepo,
     );
 
     // Provide a façade that implements isAssignmentRest using the same logic
@@ -83,10 +83,10 @@ describe('ShiftService - ScheduleRule flows', () => {
         );
         if (!assignment) return false;
 
-        const scheduleRuleId = (assignment as any).scheduleRuleId;
+        const scheduleRuleId = assignment.scheduleRuleId;
         if (!scheduleRuleId) return false;
 
-        const rule = await mockScheduleRuleRepo.findById(scheduleRuleId as any);
+        const rule = await mockScheduleRuleRepo.findById(scheduleRuleId);
         if (!rule) return false;
 
         let parsed: any = null;
@@ -100,15 +100,15 @@ describe('ShiftService - ScheduleRule flows', () => {
 
         const weeklyRest: number[] | undefined =
           parsed?.weeklyRestDays ||
-          (rule as any).weeklyRestDays ||
+          rule.weeklyRestDays ||
           parsed?.weeklyDays ||
-          (rule as any).weeklyDays;
+          rule.weeklyDays;
         if (weeklyRest && Array.isArray(weeklyRest)) {
           if (weeklyRest.includes(d.getDay())) return true;
         }
 
         const restDates: string[] | undefined =
-          parsed?.restDates || (rule as any).restDates;
+          parsed?.restDates || rule.restDates;
         if (restDates && Array.isArray(restDates)) {
           const ds = d.toISOString().slice(0, 10);
           if (restDates.includes(ds)) return true;

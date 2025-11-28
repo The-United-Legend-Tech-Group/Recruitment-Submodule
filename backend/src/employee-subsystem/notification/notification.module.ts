@@ -11,11 +11,13 @@ dotenv.config();
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Notification.name, schema: NotificationSchema }]),
+    MongooseModule.forFeature([
+      { name: Notification.name, schema: NotificationSchema },
+    ]),
     AuthModule,
   ],
   providers: [NotificationService, NotificationRepository],
   controllers: [NotificationController],
   exports: [MongooseModule],
 })
-export class NotificationModule { }
+export class NotificationModule {}
