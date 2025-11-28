@@ -12,7 +12,7 @@ export class ShiftService {
     private readonly shiftRepo: ShiftRepository,
     private readonly shiftAssignmentService: ShiftAssignmentService,
     private readonly scheduleRuleRepo?: ScheduleRuleRepository,
-  ) {}
+  ) { }
 
   async createShift(dto: CreateShiftDto) {
     return this.shiftRepo.create(dto as any);
@@ -23,10 +23,6 @@ export class ShiftService {
   }
 
   async assignShiftScoped(dto: any) {
-    const created: any[] = [];
-    const start = dto.startDate ? new Date(dto.startDate) : undefined;
-    const end = dto.endDate ? new Date(dto.endDate) : undefined;
-
     return this.shiftAssignmentService.assignShiftScoped(dto as any);
   }
 

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { RecruitmentService } from './recruitment.service';
 import { JobTemplateDocument } from './models/job-template.schema';
@@ -7,7 +7,6 @@ import { DocumentDocument } from './models/document.schema';
 import { ApplicationDocument } from './models/application.schema';
 import { InterviewDocument } from './models/interview.schema';
 
-import { ApplicationStage } from './enums/application-stage.enum';
 import { InterviewStatus } from './enums/interview-status.enum';
 
 import { CreateJobTemplateDto } from './dtos/create-job-template.dto';

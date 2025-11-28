@@ -1,4 +1,4 @@
-import { IsArray, IsOptional, IsString, IsEnum, IsDateString, IsMongoId } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsDateString, IsMongoId } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { DocumentType } from '../enums/document-type.enum';
 

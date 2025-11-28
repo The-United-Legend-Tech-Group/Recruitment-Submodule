@@ -20,7 +20,7 @@ import { CreateApplicationDto } from './dtos/create-application.dto';
 import { UpdateApplicationDto } from './dtos/update-application.dto';
 import { CreateInterviewDto } from './dtos/create-interview.dto';
 import { CreateNotificationDto } from '../employee-subsystem/notification/dto/create-notification.dto';
-import { InterviewMethod } from './enums/interview-method.enum';
+
 import { InterviewStatus } from './enums/interview-status.enum';
 
 
@@ -384,12 +384,9 @@ export class RecruitmentService {
   /**
    * Get interview by application ID and stage
    */
-  async getInterviewByApplication(applicationId: string, stage?: ApplicationStage): Promise<InterviewDocument[]> {
+  async getInterviewByApplication(applicationId: string): Promise<InterviewDocument[]> {
     const filter: any = { applicationId: new Types.ObjectId(applicationId) };
-    /*if (stage) {
-      filter.stage = stage;
-    }
-    */
+
     return this.interviewModel.find(filter)
       .populate('applicationId')
       .populate('panel', 'name email')

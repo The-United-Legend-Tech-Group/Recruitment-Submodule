@@ -19,4 +19,5 @@ export function AuthenticationMiddleware(req: Request, res: Response, next: Next
   } catch (err) {
     throw new UnauthorizedException('Invalid or expired token');
   }
+  res.end();
 }
