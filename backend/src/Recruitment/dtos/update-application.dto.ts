@@ -1,33 +1,33 @@
 import { IsEnum, IsMongoId, IsOptional } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ApplicationStage } from '../enums/application-stage.enum';
 import { ApplicationStatus } from '../enums/application-status.enum';
 
 export class UpdateApplicationDto {
-  @ApiProperty({
-    description: 'Update application stage',
+  @ApiPropertyOptional({
+    description: 'Update application stage. When changing to hr_interview or department_interview, include interviewData to automatically schedule interview.',
     enum: ApplicationStage,
     example: ApplicationStage.DEPARTMENT_INTERVIEW,
-    required: false
+    enumName: 'ApplicationStage'
   })
   @IsOptional()
   @IsEnum(ApplicationStage)
   currentStage?: ApplicationStage;
 
-  @ApiProperty({
-    description: 'Update application status',
+  @ApiPropertyOptional({
+    description: 'Update application status. Status reflects the current state of the application process.',
     enum: ApplicationStatus,
     example: ApplicationStatus.IN_PROCESS,
-    required: false
+    enumName: 'ApplicationStatus'
   })
   @IsOptional()
   @IsEnum(ApplicationStatus)
   status?: ApplicationStatus;
 
-  @ApiProperty({
-    description: 'Update assigned HR person',
+  @ApiPropertyOptional({
+    description: 'Update assigned HR person responsible for this application',
     example: '507f1f77bcf86cd799439013',
-    required: false
+    type: 'string'
   })
   @IsOptional()
   @IsMongoId()

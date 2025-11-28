@@ -7,6 +7,8 @@ import { JobRequisition, JobRequisitionSchema } from './models/job-requisition.s
 import { Document, DocumentSchema } from './models/document.schema';
 import { Application, ApplicationSchema } from './models/application.schema';
 import { ApplicationStatusHistory, ApplicationStatusHistorySchema } from './models/application-history.schema';
+import { Interview, InterviewSchema } from './models/interview.schema';
+import { NotificationModule } from '../employee-subsystem/notification/notification.module';
 
 
 @Module({
@@ -16,8 +18,10 @@ import { ApplicationStatusHistory, ApplicationStatusHistorySchema } from './mode
       { name: JobRequisition.name, schema: JobRequisitionSchema },
       { name: Document.name, schema: DocumentSchema },
       { name: Application.name, schema: ApplicationSchema },
-      { name: ApplicationStatusHistory.name, schema: ApplicationStatusHistorySchema }
-    ])
+      { name: ApplicationStatusHistory.name, schema: ApplicationStatusHistorySchema },
+      { name: Interview.name, schema: InterviewSchema }
+    ]),
+    NotificationModule
   ],
   controllers: [RecruitmentController],
   providers: [RecruitmentService],

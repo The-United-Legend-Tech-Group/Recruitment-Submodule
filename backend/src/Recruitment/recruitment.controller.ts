@@ -5,6 +5,10 @@ import { JobTemplateDocument } from './models/job-template.schema';
 import { JobRequisitionDocument } from './models/job-requisition.schema';
 import { DocumentDocument } from './models/document.schema';
 import { ApplicationDocument } from './models/application.schema';
+import { InterviewDocument } from './models/interview.schema';
+
+import { ApplicationStage } from './enums/application-stage.enum';
+import { InterviewStatus } from './enums/interview-status.enum';
 
 import { CreateJobTemplateDto } from './dtos/create-job-template.dto';
 import { CreateJobRequisitionDto } from './dtos/create-job-requisition.dto';
@@ -12,6 +16,9 @@ import { UpdateJobRequisitionDto } from './dtos/update-jobrequisition.dto';
 import { CreateCVDocumentDto } from './dtos/create-cv-document.dto';
 import { CreateApplicationDto } from './dtos/create-application.dto';
 import { UpdateApplicationDto } from './dtos/update-application.dto';
+import { CreateInterviewDto } from './dtos/create-interview.dto';
+import { SendNotificationDto } from './dtos/send-notification.dto';
+
 
 @ApiTags('Recruitment')
 @Controller()
@@ -91,11 +98,14 @@ export class RecruitmentController {
   }
 
   //REC-017 part 2: Update Application Status/Stage
-  @ApiOperation({ summary: 'Update application status and stage' })
+  @ApiOperation({
+    summary: 'Update application status and stage',
+    description: 'Updates application status/stage and sends notifications. To schedule interviews when moving to hr_interview or department_interview stages, use the separate POST /Interview endpoint after updating the application stage.'
+  })
   @ApiParam({ name: 'candidateId', description: 'Candidate MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
   @ApiParam({ name: 'requisitionId', description: 'Job requisition ID (user-defined)', example: 'REQ-2024-001' })
   @ApiBody({ type: UpdateApplicationDto })
-  @ApiResponse({ status: 200, description: 'Application updated successfully and history recorded' })
+  @ApiResponse({ status: 200, description: 'Application updated successfully and history recorded. Notifications sent to candidate and HR.' })
   @ApiResponse({ status: 404, description: 'Application or job requisition not found' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @Patch('Application/:candidateId/:requisitionId')
@@ -105,5 +115,78 @@ export class RecruitmentController {
     @Body() updateApplicationDto: UpdateApplicationDto
   ): Promise<ApplicationDocument> {
     return this.recruitmentService.updateApplication(candidateId, requisitionId, updateApplicationDto);
+  }
+
+  @ApiOperation({ summary: 'Send manual notification for application change' })
+  @ApiParam({ name: 'applicationId', description: 'Application MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
+  @ApiBody({ type: SendNotificationDto, required: false })
+  @ApiResponse({ status: 200, description: 'Notification sent successfully' })
+  @ApiResponse({ status: 404, description: 'Application not found' })
+  @ApiResponse({ status: 500, description: 'Failed to send notification' })
+  @Post('Application/:applicationId/notify')
+  async sendApplicationNotification(
+    @Param('applicationId') applicationId: string,
+    @Body() notificationData?: SendNotificationDto
+  ): Promise<{ message: string }> {
+    await this.recruitmentService.notifyApplicationChange(
+      applicationId,
+      notificationData?.candidateId,
+      notificationData?.hrId,
+      notificationData?.customMessage
+    );
+    return { message: 'Notification sent successfully' };
+  }
+
+  // =================== INTERVIEW ENDPOINTS ===================
+
+  @ApiOperation({
+    summary: 'Create interview for application (Manual HR Process)',
+    description: 'HR manually creates and schedules interviews for applications in hr_interview or department_interview stages. This allows HR to carefully select interviewers and schedule at appropriate times. Automatically sends notifications to candidate, HR, and selected panel members.'
+  })
+  @ApiBody({ type: CreateInterviewDto })
+  @ApiResponse({ status: 201, description: 'Interview created successfully and notifications sent to candidate, HR, and panel members' })
+  @ApiResponse({ status: 404, description: 'Application not found or invalid stage' })
+  @ApiResponse({ status: 400, description: 'Invalid interview data' })
+  @Post('Interview')
+  async createInterview(@Body() createInterviewDto: CreateInterviewDto): Promise<InterviewDocument> {
+    return this.recruitmentService.createInterview(createInterviewDto);
+  }
+
+  @ApiOperation({ summary: 'Get interviews for application' })
+  @ApiParam({ name: 'applicationId', description: 'Application MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'List of interviews for the application', type: [Object] })
+  @ApiResponse({ status: 400, description: 'Invalid application ID format' })
+  @Get('Interview/Application/:applicationId')
+  async getInterviewsByApplication(@Param('applicationId') applicationId: string): Promise<InterviewDocument[]> {
+    return this.recruitmentService.getInterviewByApplication(applicationId);
+  }
+
+  /*@ApiOperation({ summary: 'Get interviews for application by stage' })
+  @ApiParam({ name: 'applicationId', description: 'Application MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
+  @ApiParam({ name: 'stage', description: 'Interview stage', enum: ApplicationStage })
+  @ApiResponse({ status: 200, description: 'List of interviews for the application and stage', type: [Object] })
+  @Get('Interview/Application/:applicationId/Stage/:stage')
+  async getInterviewsByApplicationAndStage(
+    @Param('applicationId') applicationId: string,
+    @Param('stage') stage: ApplicationStage
+  ): Promise<InterviewDocument[]> {
+    return this.recruitmentService.getInterviewByApplication(applicationId, stage);
+  }*/
+
+  @ApiOperation({ summary: 'Update interview status and send notifications' })
+  @ApiParam({ name: 'interviewId', description: 'Interview MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
+  @ApiResponse({ status: 200, description: 'Interview status updated and notifications sent' })
+  @ApiResponse({ status: 404, description: 'Interview not found' })
+  @Patch('Interview/:interviewId/Status/:status')
+  async updateInterviewStatus(
+    @Param('interviewId') interviewId: string,
+    @Param('status') status: InterviewStatus,
+    @Body() feedbackData?: { candidateFeedback?: string }
+  ): Promise<InterviewDocument> {
+    return this.recruitmentService.updateInterviewStatus(
+      interviewId,
+      status,
+      feedbackData?.candidateFeedback
+    );
   }
 }
