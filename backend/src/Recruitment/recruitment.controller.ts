@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { RecruitmentService } from './recruitment.service';
 import { JobTemplateDocument } from './models/job-template.schema';
@@ -138,7 +138,7 @@ export class RecruitmentController {
   }
 
   // =================== INTERVIEW ENDPOINTS ===================
-
+  //REC -010
   @ApiOperation({
     summary: 'Create interview for application (Manual HR Process)',
     description: 'HR manually creates and schedules interviews for applications in hr_interview or department_interview stages. This allows HR to carefully select interviewers and schedule at appropriate times. Automatically sends notifications to candidate, HR, and selected panel members.'
@@ -172,7 +172,7 @@ export class RecruitmentController {
   ): Promise<InterviewDocument[]> {
     return this.recruitmentService.getInterviewByApplication(applicationId, stage);
   }*/
-
+  //REC-011 & RE-020
   @ApiOperation({ summary: 'Update interview status and send notifications' })
   @ApiParam({ name: 'interviewId', description: 'Interview MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
   @ApiResponse({ status: 200, description: 'Interview status updated and notifications sent' })
