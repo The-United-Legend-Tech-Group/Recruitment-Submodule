@@ -249,8 +249,8 @@ export class RecruitmentService {
     }
 
     // Use the ID from DTO if provided, otherwise use the parameter
-    const targetApplicationId =  applicationId;
-    
+    const targetApplicationId = applicationId;
+
     // Find the application to update
     const currentApplication = await this.applicationModel.findById(targetApplicationId).exec();
     if (!currentApplication) {
@@ -258,7 +258,7 @@ export class RecruitmentService {
     }
 
     // Prepare update data (exclude id and hrId from the update)
-    const {hrId, ...updateData } = updateApplicationDto;
+    const { hrId, ...updateData } = updateApplicationDto;
 
     // Update the application directly by ID
     const updatedApplication = await this.applicationModel.findByIdAndUpdate(
@@ -481,7 +481,7 @@ export class RecruitmentService {
     if (createInterviewDto.method === InterviewMethod.VIDEO && !createInterviewDto.videoLink) {
       throw new NotFoundException('Video link is required for video interviews');
     }
-    if (createInterviewDto.method !== InterviewMethod.VIDEO && createInterviewDto.videoLink) {  
+    if (createInterviewDto.method !== InterviewMethod.VIDEO && createInterviewDto.videoLink) {
       throw new NotFoundException('Video link should not be provided for non-video interviews');
     }
     if (new Set(createInterviewDto.panel).size !== createInterviewDto.panel.length) {

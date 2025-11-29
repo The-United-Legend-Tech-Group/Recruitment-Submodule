@@ -1,8 +1,6 @@
-import { IsArray, IsDate, IsEnum, IsMongoId, IsOptional, IsString, ValidateNested } from 'class-validator';
+import { IsArray, IsDate, IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ApplicationStage } from '../enums/application-stage.enum';
-import { ApplicationStatus } from '../enums/application-status.enum';
 import { InterviewMethod } from '../enums/interview-method.enum';
 
 

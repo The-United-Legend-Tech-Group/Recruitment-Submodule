@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { RecruitmentService } from './recruitment.service';
 import { JobTemplateDocument } from './models/job-template.schema';
@@ -7,7 +7,6 @@ import { DocumentDocument } from './models/document.schema';
 import { ApplicationDocument } from './models/application.schema';
 import { InterviewDocument } from './models/interview.schema';
 
-import { ApplicationStage } from './enums/application-stage.enum';
 import { InterviewStatus } from './enums/interview-status.enum';
 
 import { CreateJobTemplateDto } from './dtos/create-job-template.dto';
@@ -108,19 +107,17 @@ export class RecruitmentController {
     summary: 'Update application status and stage',
     description: 'Updates application status/stage and sends notifications. To schedule interviews when moving to hr_interview or department_interview stages, use the separate POST /Interview endpoint after updating the application stage.'
   })
-  @ApiParam({ name: 'candidateId', description: 'Candidate MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
-  @ApiParam({ name: 'requisitionId', description: 'Job requisition ID (user-defined)', example: 'REQ-2024-001' })
+  @ApiParam({ name: 'applicationId', description: 'Application MongoDB ObjectId', example: '507f1f77bcf86cd799439011' })
   @ApiBody({ type: UpdateApplicationDto })
   @ApiResponse({ status: 200, description: 'Application updated successfully and history recorded. Notifications sent to candidate and HR.' })
   @ApiResponse({ status: 404, description: 'Application or job requisition not found' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @Patch('Application/:candidateId/:requisitionId')
+  @Patch('Application/:applicationId')
   async updateApplication(
-    @Param('candidateId') candidateId: string,
-    @Param('requisitionId') requisitionId: string,
+    @Param('applicationId') applicationId: string,
     @Body() updateApplicationDto: UpdateApplicationDto
   ): Promise<ApplicationDocument> {
-    return this.recruitmentService.updateApplication(candidateId, updateApplicationDto);
+    return this.recruitmentService.updateApplication(applicationId, updateApplicationDto);
   }
 
   @ApiOperation({ summary: 'Send manual notification for application change' })
