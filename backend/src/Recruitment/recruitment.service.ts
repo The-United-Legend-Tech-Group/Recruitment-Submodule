@@ -20,13 +20,13 @@ import { CreateApplicationDto } from './dtos/create-application.dto';
 import { UpdateApplicationDto } from './dtos/update-application.dto';
 import { CreateInterviewDto } from './dtos/create-interview.dto';
 import { CreateNotificationDto } from '../employee-subsystem/notification/dto/create-notification.dto';
-import { InterviewMethod } from './enums/interview-method.enum';
+
 import { InterviewStatus } from './enums/interview-status.enum';
+import { InterviewMethod } from './enums/interview-method.enum';
 
 import { EmployeeProfileRepository } from '../employee-subsystem/employee/repository/employee-profile.repository';
 import { CandidateRepository } from '../employee-subsystem/employee/repository/candidate.repository';
 import { EmployeeSystemRoleRepository } from '../employee-subsystem/employee/repository/employee-system-role.repository';
-import { EmployeeProfileChangeRequestRepository } from '../employee-subsystem/employee/repository/ep-change-request.repository';
 import { SystemRole, EmployeeStatus } from '../employee-subsystem/employee/enums/employee-profile.enums';
 import { EmployeeProfileDocument } from '../employee-subsystem/employee/models/employee-profile.schema';
 //import { EmployeeModule } from '../employee-subsystem/employee/employee.module';
@@ -45,8 +45,6 @@ export class RecruitmentService {
     private readonly employeeProfileRepository: EmployeeProfileRepository,
     private readonly candidateRepository: CandidateRepository,
     private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
-    private readonly employeeProfileChangeRequestRepository: EmployeeProfileChangeRequestRepository,
-
   ) { }
 
   async validateEmployeeExistence(employeeId: string, roles: SystemRole[]): Promise<boolean> {
@@ -517,10 +515,7 @@ export class RecruitmentService {
    */
   async getInterviewByApplication(applicationId: string): Promise<InterviewDocument[]> {
     const filter: any = { applicationId: new Types.ObjectId(applicationId) };
-    /*if (stage) {
-      filter.stage = stage;
-    }
-    */
+
     return this.interviewModel.find(filter)
       .populate('applicationId')
       .populate('panel', 'name email')
