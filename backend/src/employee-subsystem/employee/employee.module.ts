@@ -23,9 +23,11 @@ import {
 import { EmployeeSystemRoleRepository } from './repository/employee-system-role.repository';
 import { Candidate, CandidateSchema } from './models/candidate.schema';
 import { CandidateRepository } from './repository/candidate.repository';
+import { OrganizationStructureModule } from '../organization-structure/organization-structure.module';
 
 @Module({
   imports: [
+    OrganizationStructureModule,
     MongooseModule.forFeature([
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: AppraisalRecord.name, schema: AppraisalRecordSchema },
@@ -46,11 +48,11 @@ import { CandidateRepository } from './repository/candidate.repository';
     CandidateRepository,
   ],
   exports: [
-    EmployeeService,
     EmployeeProfileRepository,
     CandidateRepository,
     EmployeeSystemRoleRepository,
     EmployeeProfileChangeRequestRepository,
+    EmployeeService,
   ],
 })
 export class EmployeeModule {}

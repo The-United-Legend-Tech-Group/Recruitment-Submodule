@@ -7,8 +7,8 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EmployeeProfile } from './models/employee-profile.schema';
-import { Candidate } from './models/candidate.schema';
 import { AppraisalRecord } from '../performance/models/appraisal-record.schema';
+import { PositionRepository } from '../organization-structure/repository/position.repository';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { EmployeeProfileRepository } from './repository/employee-profile.repository';
 import { UpdateContactInfoDto } from './dto/update-contact-info.dto';
@@ -16,28 +16,26 @@ import { UpdateEmployeeProfileDto } from './dto/update-employee-profile.dto';
 import { UpdateEmployeeStatusDto } from './dto/update-employee-status.dto';
 import { AdminUpdateEmployeeProfileDto } from './dto/admin-update-employee-profile.dto';
 import { CreateProfileChangeRequestDto } from './dto/create-profile-change-request.dto';
-import {
-  MaritalStatus,
-  SystemRole,
-  EmployeeStatus,
-  ProfileChangeStatus,
-} from './enums/employee-profile.enums';
+import { UpdateEmployeeDepartmentDto } from './dto/update-employee-department.dto';
+import { UpdateEmployeePositionDto } from './dto/update-employee-position.dto';
+import { MaritalStatus, SystemRole, EmployeeStatus, ProfileChangeStatus } from './enums/employee-profile.enums';
 import { EmployeeSystemRoleRepository } from './repository/employee-system-role.repository';
 import { EmployeeProfileChangeRequestRepository } from './repository/ep-change-request.repository';
+import { PositionAssignmentRepository } from '../organization-structure/repository/position-assignment.repository';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     @InjectModel(EmployeeProfile.name)
     private employeeProfileModel: Model<EmployeeProfile>,
-    @InjectModel(Candidate.name)
-    private candidateModel: Model<Candidate>,
     @InjectModel(AppraisalRecord.name)
-    private appraisalRecordModel: Model<AppraisalRecord>,
+    private readonly appraisalRecordModel: Model<AppraisalRecord>,
+    private readonly positionRepository: PositionRepository,
     private readonly employeeProfileRepository: EmployeeProfileRepository,
     private readonly employeeProfileChangeRequestRepository: EmployeeProfileChangeRequestRepository,
     private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
-  ) {}
+    private readonly positionAssignmentRepository: PositionAssignmentRepository,
+  ) { }
 
   async onboard(
     createEmployeeDto: CreateEmployeeDto,
@@ -107,17 +105,81 @@ export class EmployeeService {
     return updatedEmployee;
   }
 
-  async updateProfile(
-    id: string,
-    updateEmployeeProfileDto: UpdateEmployeeProfileDto,
-  ): Promise<EmployeeProfile> {
-    const updatedEmployee = await this.employeeProfileRepository.updateById(
-      id,
-      updateEmployeeProfileDto,
-    );
+  async updateProfile(id: string, updateEmployeeProfileDto: UpdateEmployeeProfileDto): Promise<EmployeeProfile> {
+    const updatedEmployee = await this.employeeProfileRepository.updateById(id, updateEmployeeProfileDto);
     if (!updatedEmployee) {
       throw new ConflictException('Employee not found');
     }
+    return updatedEmployee;
+  }
+
+  async updateDepartment(id: string, updateEmployeeDepartmentDto: UpdateEmployeeDepartmentDto): Promise<EmployeeProfile> {
+    const updatedEmployee = await this.employeeProfileRepository.updateById(id, {
+      primaryDepartmentId: new Types.ObjectId(updateEmployeeDepartmentDto.departmentId),
+    } as any);
+    if (!updatedEmployee) {
+      throw new ConflictException('Employee not found');
+    }
+    return updatedEmployee;
+  }
+
+  async updatePosition(id: string, updateEmployeePositionDto: UpdateEmployeePositionDto): Promise<EmployeeProfile> {
+    console.log('=== UPDATE POSITION DEBUG ===');
+    console.log('Employee ID:', id);
+    console.log('Position ID from DTO:', updateEmployeePositionDto.positionId);
+
+    const position = await this.positionRepository.findById(updateEmployeePositionDto.positionId);
+    console.log('Position found (full object):', JSON.stringify(position, null, 2));
+
+    if (!position || position.isActive) {
+      console.log('ERROR: Position not found for ID:', updateEmployeePositionDto.positionId);
+      throw new NotFoundException('Position not found or is active.');
+    }
+
+    let supervisorPositionId = position.reportsToPositionId;
+
+    // If reportsToPositionId is not set on the position, manually resolve it from the department
+    if (!supervisorPositionId && position.departmentId) {
+      const Department = this.employeeProfileModel.db.model('Department');
+      const department = await Department.findById(position.departmentId).select('headPositionId').lean<{ headPositionId?: Types.ObjectId }>().exec();
+
+      console.log('Department found:', department);
+
+      // Set supervisor to department head, unless this position IS the department head
+      if (department?.headPositionId &&
+        department.headPositionId.toString() !== position._id.toString()) {
+        supervisorPositionId = department.headPositionId;
+        console.log('Resolved supervisor from department head:', supervisorPositionId);
+      }
+    }
+    const updatePayload: any = {
+      primaryPositionId: new Types.ObjectId(updateEmployeePositionDto.positionId),
+      supervisorPositionId: supervisorPositionId || undefined,
+      primaryDepartmentId: position.departmentId,
+    };
+
+    console.log('Update payload:', JSON.stringify(updatePayload, null, 2));
+
+    const updatedEmployee = await this.employeeProfileRepository.updateById(id, updatePayload);
+    console.log('Updated employee supervisorPositionId:', updatedEmployee?.supervisorPositionId);
+
+    if (!updatedEmployee) {
+      throw new ConflictException('Employee not found');
+    }
+
+    // Create PositionAssignment record
+    await this.positionAssignmentRepository.create({
+      employeeProfileId: new Types.ObjectId(id),
+      positionId: new Types.ObjectId(updateEmployeePositionDto.positionId),
+      departmentId: position.departmentId,
+      startDate: new Date(),
+    });
+
+    // Update position status to active
+    await this.positionRepository.updateById(updateEmployeePositionDto.positionId, {
+      isActive: true,
+    });
+
     return updatedEmployee;
   }
 
@@ -367,116 +429,4 @@ export class EmployeeService {
       },
     };
   }
-
-   async getEmployeeById(employeeId: string): Promise<EmployeeProfile | null> {
-    return this.employeeProfileRepository.findById(employeeId);
-  }
-
-  async getAppraisalRecordsByEmployeeId(employeeId: string): Promise<AppraisalRecord[]> {
-    return this.appraisalRecordModel
-      .find({ employeeProfileId: employeeId })
-      .sort({ managerSubmittedAt: -1, createdAt: -1 })
-      .lean();
-  }
-
-  async updateEmployeeStatusToTerminated(employeeId: string): Promise<{ previousStatus: string; employee: EmployeeProfile }> {
-    const employee = await this.employeeProfileRepository.findById(employeeId);
-    if (!employee) {
-      throw new NotFoundException(`Employee with ID ${employeeId} not found`);
-    }
-
-    const previousStatus = employee.status;
-    
-    const updatedEmployee = await this.employeeProfileRepository.updateById(
-      employeeId,
-      {
-        status: EmployeeStatus.TERMINATED,
-        statusEffectiveFrom: new Date(),
-      },
-    );
-
-    if (!updatedEmployee) {
-      throw new ConflictException('Failed to update employee status');
-    }
-
-    return {
-      previousStatus,
-      employee: updatedEmployee,
-    };
-  }
-
-  async deactivateSystemRole(employeeId: string): Promise<{ 
-    rolesDeactivated: boolean; 
-    previousRoles: string[]; 
-    previousPermissions: string[] 
-  }> {
-    const systemRole = await this.employeeSystemRoleRepository.findOne({
-      employeeProfileId: employeeId,
-    } as any);
-
-    if (!systemRole) {
-      return {
-        rolesDeactivated: false,
-        previousRoles: [],
-        previousPermissions: [],
-      };
-    }
-
-    const previousRoles = [...systemRole.roles];
-    const previousPermissions = [...systemRole.permissions];
-
-    await this.employeeSystemRoleRepository.update(
-      { employeeProfileId: employeeId },
-      { $set: { isActive: false } },
-    );
-
-    return {
-      rolesDeactivated: true,
-      previousRoles,
-      previousPermissions,
-    };
-  }
-  
-  async findDepartmentHead(departmentName: string): Promise<{ id: string; employeeNumber: string } | null> {
-    try {
-      const departmentHead = await this.employeeProfileModel
-        .findOne({
-          department: departmentName,
-          position: { $regex: /manager|head|director/i },
-          status: EmployeeStatus.ACTIVE
-        })
-        .exec();
-
-      if (!departmentHead) {
-        return null;
-      }
-
-      return {
-        id: departmentHead._id.toString(),
-        employeeNumber: departmentHead.employeeNumber
-      };
-    } catch (error) {
-      console.error(`Error finding department head for ${departmentName}:`, error);
-      return null;
-    }
-  }
-
-  async updateCandidateStatus(candidateId: string, status: string): Promise<Candidate> {
-    const candidate = await this.candidateModel.findById(candidateId);
-    if (!candidate) {
-      throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
-    }
-
-    // Validate status is a valid CandidateStatus enum value
-    const validStatuses = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER_SENT', 'OFFER_ACCEPTED', 'HIRED', 'REJECTED', 'WITHDRAWN'];
-    if (!validStatuses.includes(status)) {
-      throw new BadRequestException(`Invalid candidate status: ${status}`);
-    }
-
-    candidate.status = status as any;
-    await candidate.save();
-
-    return candidate;
-  }
-
 }
