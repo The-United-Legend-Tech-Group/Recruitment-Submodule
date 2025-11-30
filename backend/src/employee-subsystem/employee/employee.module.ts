@@ -46,6 +46,7 @@ import { CandidateRepository } from './repository/candidate.repository';
     CandidateRepository,
   ],
   exports: [
+    EmployeeService,
     EmployeeProfileRepository,
     CandidateRepository,
     EmployeeSystemRoleRepository,

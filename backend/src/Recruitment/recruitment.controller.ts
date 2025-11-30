@@ -1,181 +1,105 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiParam,
-  ApiBody,
-} from '@nestjs/swagger';
+import { Controller, Post, Get, Patch, Body, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
 import { RecruitmentService } from './recruitment.service';
-import { JobTemplateDocument } from './models/job-template.schema';
-import { JobRequisitionDocument } from './models/job-requisition.schema';
-import { DocumentDocument } from './models/document.schema';
-import { ApplicationDocument } from './models/application.schema';
+import { UploadSignedContractDto } from './DTO/upload-signed-contract.dto';
+import { UploadComplianceDocumentsDto } from './DTO/upload-compliance-documents.dto';
+import { HrSignContractDto } from './DTO/hr-sign-contract.dto';
+import { CreateOnboardingChecklistDto } from './DTO/create-onboarding-checklist.dto';
+import { CreateOnboardingWithDefaultsDto } from './DTO/create-onboarding-with-defaults.dto';
+import { GetOnboardingChecklistDto } from './DTO/get-onboarding-checklist.dto';
+import { SendOnboardingReminderDto } from './DTO/send-onboarding-reminder.dto';
+import { UpdateTaskStatusDto } from './DTO/update-task-status.dto';
+import { CancelOnboardingDto } from './DTO/cancel-onboarding.dto';
+import { CreateOfferDto } from './DTO/create-offer.dto';
+import { AddOfferApproverDto } from './DTO/add-offer-approver.dto';
+import { ApproveOfferDto } from './DTO/approve-offer.dto';
+import { SendOfferDto } from './DTO/send-offer.dto';
+import { CandidateRespondOfferDto } from './DTO/candidate-respond-offer.dto';
 
-import { CreateJobTemplateDto } from './dtos/create-job-template.dto';
-import { CreateJobRequisitionDto } from './dtos/create-job-requisition.dto';
-import { UpdateJobRequisitionDto } from './dtos/update-jobrequisition.dto';
-import { CreateCVDocumentDto } from './dtos/create-cv-document.dto';
-import { CreateApplicationDto } from './dtos/create-application.dto';
-import { UpdateApplicationDto } from './dtos/update-application.dto';
-
-@ApiTags('Recruitment')
-@Controller()
+@Controller('recruitment')
 export class RecruitmentController {
-  constructor(private readonly recruitmentService: RecruitmentService) {}
+    constructor(private readonly recruitmentService: RecruitmentService) {}
 
-  @Get()
-  getHello(): string {
-    return this.recruitmentService.getHello();
-  }
-  //REC-003
-  @ApiOperation({ summary: 'Create a new job template' })
-  @ApiBody({ type: CreateJobTemplateDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Job template created successfully',
-  })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @Post('createTemplate')
-  async createJobTemplate(
-    @Body() CreateJobTemplateDto: CreateJobTemplateDto,
-  ): Promise<JobTemplateDocument> {
-    return await this.recruitmentService.createjob_template(
-      CreateJobTemplateDto,
-    );
-  }
+    @Post('offer/create')
+    async createOffer(@Body() dto: CreateOfferDto) {
+        return this.recruitmentService.createOffer(dto);
+    }
 
-  @ApiOperation({ summary: 'Create a new job requisition' })
-  @ApiBody({ type: CreateJobRequisitionDto })
-  @ApiResponse({
-    status: 201,
-    description: 'Job requisition created successfully',
-  })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 404, description: 'Job template not found' })
-  @Post('Requisition')
-  async createJobRequisition(
-    @Body() CreateJobRequisitionDto: CreateJobRequisitionDto,
-  ): Promise<JobRequisitionDocument> {
-    return await this.recruitmentService.createjob_requision(
-      CreateJobRequisitionDto,
-    );
-  }
+    @Post('offer/add-approver')
+    async addOfferApprover(@Body() dto: AddOfferApproverDto) {
+        return this.recruitmentService.addOfferApprover(dto);
+    }
 
-  //HELPS IN Doing REC-0023
-  @ApiOperation({ summary: 'Update job requisition by ID' })
-  @ApiParam({
-    name: 'requisitionid',
-    description: 'Job requisition ID',
-    example: 'REQ-2024-001',
-  })
-  @ApiBody({ type: UpdateJobRequisitionDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Job requisition updated successfully',
-  })
-  @ApiResponse({ status: 404, description: 'Job requisition not found' })
-  @Patch('Rrequisition/:requisitionid')
-  async updateJobRequision(
-    @Param('requisitionid') id: string,
-    @Body() UpdateJobRequisitionDto: UpdateJobRequisitionDto,
-  ): Promise<JobRequisitionDocument> {
-    return await this.recruitmentService.updatejob_requisition(
-      id,
-      UpdateJobRequisitionDto,
-    );
-  }
-  //REC-0023
-  @ApiOperation({ summary: 'Get all published job requisitions' })
-  @ApiResponse({
-    status: 200,
-    description: 'List of published job requisitions',
-    type: [Object],
-  })
-  @Get('Requisition/published')
-  async getAllPublishedRequistions(): Promise<JobRequisitionDocument[]> {
-    return await this.recruitmentService.getAllpublishedJobRequisition();
-  }
+    @Post('offer/approve')
+    async approveOffer(@Body() dto: ApproveOfferDto) {
+        return this.recruitmentService.approveOffer(dto);
+    }
 
-  //REC-007
-  @ApiOperation({ summary: 'Upload CV document' })
-  @ApiBody({ type: CreateCVDocumentDto })
-  @ApiResponse({
-    status: 201,
-    description: 'CV document uploaded successfully',
-  })
-  @ApiResponse({ status: 400, description: 'Invalid document data' })
-  @Post('CVdocument')
-  async uploadDocument(
-    @Body() documentDto: CreateCVDocumentDto,
-  ): Promise<DocumentDocument> {
-    return this.recruitmentService.createCVDocument(documentDto);
-  }
+    @Post('offer/send')
+    async sendOffer(@Body() dto: SendOfferDto) {
+        return this.recruitmentService.sendOffer(dto);
+    }
 
-  //REC-007
-  @ApiOperation({ summary: 'Create a new job application' })
-  @ApiBody({ type: CreateApplicationDto })
-  @ApiResponse({ status: 201, description: 'Application created successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid application data' })
-  @ApiResponse({ status: 404, description: 'Job requisition not found' })
-  @Post('Application')
-  async createApplication(
-    @Body() createApplicationDto: CreateApplicationDto,
-  ): Promise<ApplicationDocument> {
-    return this.recruitmentService.createApplication(createApplicationDto);
-  }
-  //REC-017 part 1
-  @ApiOperation({ summary: 'Get all applications for a specific candidate' })
-  @ApiParam({
-    name: 'candidateId',
-    description: 'Candidate MongoDB ObjectId',
-    example: '507f1f77bcf86cd799439011',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of candidate applications',
-    type: [Object],
-  })
-  @ApiResponse({ status: 400, description: 'Invalid candidate ID format' })
-  @Get('Application/:candidateId')
-  async getApplicationsByCandidate(
-    @Param('candidateId') candidateId: string,
-  ): Promise<ApplicationDocument[]> {
-    return this.recruitmentService.getallcandidateApplications(candidateId);
-  }
+    @Post('offer/candidate-respond')
+    async candidateRespondOffer(@Body() dto: CandidateRespondOfferDto) {
+        return this.recruitmentService.candidateRespondOffer(dto);
+    }
 
-  //REC-017 part 2: Update Application Status/Stage
-  @ApiOperation({ summary: 'Update application status and stage' })
-  @ApiParam({
-    name: 'candidateId',
-    description: 'Candidate MongoDB ObjectId',
-    example: '507f1f77bcf86cd799439011',
-  })
-  @ApiParam({
-    name: 'requisitionId',
-    description: 'Job requisition ID (user-defined)',
-    example: 'REQ-2024-001',
-  })
-  @ApiBody({ type: UpdateApplicationDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Application updated successfully and history recorded',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Application or job requisition not found',
-  })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @Patch('Application/:candidateId/:requisitionId')
-  async updateApplication(
-    @Param('candidateId') candidateId: string,
-    @Param('requisitionId') requisitionId: string,
-    @Body() updateApplicationDto: UpdateApplicationDto,
-  ): Promise<ApplicationDocument> {
-    return this.recruitmentService.updateApplication(
-      candidateId,
-      requisitionId,
-      updateApplicationDto,
-    );
-  }
+    @Post('contract/sign')
+    @UseInterceptors(FilesInterceptor('files'))
+    async signContract(
+        @Body() dto: UploadSignedContractDto,
+        @UploadedFiles() files: any[]
+    ) {
+        return this.recruitmentService.signContract(dto, files);
+    }
+
+    @Post('contract/hr-sign')
+    async hrSignContract(@Body() dto: HrSignContractDto) {
+        return this.recruitmentService.hrSignContract(dto);
+    }
+
+    @Post('documents/upload')
+    @UseInterceptors(FilesInterceptor('files'))
+    async uploadComplianceDocuments(
+        @Body() dto: UploadComplianceDocumentsDto,
+        @UploadedFiles() files: any[]
+    ) {
+        return this.recruitmentService.uploadComplianceDocuments(dto, files);
+    }
+
+    @Post('onboarding/checklist')
+    async createOnboardingChecklist(@Body() dto: CreateOnboardingChecklistDto) {
+        return this.recruitmentService.createOnboardingChecklist(dto);
+    }
+
+    @Post('onboarding/checklist/defaults')
+    async createOnboardingWithDefaults(@Body() dto: CreateOnboardingWithDefaultsDto) {
+        return this.recruitmentService.createOnboardingWithDefaults(dto);
+    }
+
+    @Get('onboarding/checklist')
+    async getOnboardingChecklist(@Body() dto: GetOnboardingChecklistDto) {
+        return this.recruitmentService.getOnboardingChecklist(dto);
+    }
+
+    @Post('onboarding/reminders')
+    async sendOnboardingReminders(@Body() dto: SendOnboardingReminderDto) {
+        return this.recruitmentService.sendOnboardingReminders(dto);
+    }
+
+    @Post('onboarding/reminders/all')
+    async sendAllOnboardingReminders(@Body() body: { daysBeforeDeadline?: number }) {
+        return this.recruitmentService.sendAllOnboardingReminders(body.daysBeforeDeadline || 1);
+    }
+
+    @Patch('onboarding/task/status')
+    async updateTaskStatus(@Body() dto: UpdateTaskStatusDto) {
+        return this.recruitmentService.updateTaskStatus(dto);
+    }
+
+    @Post('onboarding/cancel')
+    async cancelOnboarding(@Body() dto: CancelOnboardingDto) {
+        return this.recruitmentService.cancelOnboarding(dto);
+    }
 }
