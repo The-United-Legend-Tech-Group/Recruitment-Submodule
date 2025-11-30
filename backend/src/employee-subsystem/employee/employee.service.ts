@@ -7,6 +7,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { EmployeeProfile } from './models/employee-profile.schema';
+import { Candidate } from './models/candidate.schema';
 import { AppraisalRecord } from '../performance/models/appraisal-record.schema';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { EmployeeProfileRepository } from './repository/employee-profile.repository';
@@ -29,6 +30,8 @@ export class EmployeeService {
   constructor(
     @InjectModel(EmployeeProfile.name)
     private employeeProfileModel: Model<EmployeeProfile>,
+    @InjectModel(Candidate.name)
+    private candidateModel: Model<Candidate>,
     @InjectModel(AppraisalRecord.name)
     private appraisalRecordModel: Model<AppraisalRecord>,
     private readonly employeeProfileRepository: EmployeeProfileRepository,
@@ -456,6 +459,24 @@ export class EmployeeService {
       console.error(`Error finding department head for ${departmentName}:`, error);
       return null;
     }
+  }
+
+  async updateCandidateStatus(candidateId: string, status: string): Promise<Candidate> {
+    const candidate = await this.candidateModel.findById(candidateId);
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
+    }
+
+    // Validate status is a valid CandidateStatus enum value
+    const validStatuses = ['APPLIED', 'SCREENING', 'INTERVIEW', 'OFFER_SENT', 'OFFER_ACCEPTED', 'HIRED', 'REJECTED', 'WITHDRAWN'];
+    if (!validStatuses.includes(status)) {
+      throw new BadRequestException(`Invalid candidate status: ${status}`);
+    }
+
+    candidate.status = status as any;
+    await candidate.save();
+
+    return candidate;
   }
 
 }

@@ -165,8 +165,6 @@ export class RecruitmentService {
 
         if (anyRejected) {
             offer.finalStatus = OfferFinalStatus.REJECTED;
-        } else if (allApproved) {
-            offer.finalStatus = OfferFinalStatus.APPROVED;
         }
 
         await offer.save();
@@ -198,13 +196,14 @@ export class RecruitmentService {
             }
         }
 
-        if (offer.finalStatus !== OfferFinalStatus.APPROVED && offer.approvers.length > 0) {
-            throw new BadRequestException('Offer must be approved before sending');
-        }
-
         // Mark offer as sent
-        offer.finalStatus = 'sent' as any;
         await offer.save();
+
+        // Update candidate status to OFFER_SENT
+        await this.employeeService.updateCandidateStatus(
+            offer.candidateId.toString(),
+            'OFFER_SENT'
+        );
 
         // TODO: Send email/notification to candidate with offer letter
         const notification = new this.notificationModel({
@@ -243,8 +242,14 @@ export class RecruitmentService {
         offer.applicantResponse = response as any;
 
         if (response === 'accepted') {
-            offer.finalStatus = 'accepted' as any;
+            offer.finalStatus = OfferFinalStatus.APPROVED;
             offer.candidateSignedAt = new Date();
+
+            // Update candidate status to OFFER_ACCEPTED
+            await this.employeeService.updateCandidateStatus(
+                candidateId,
+                'OFFER_ACCEPTED'
+            );
 
             // Automatically create contract when offer is accepted
             const contract = new this.contractModel({
@@ -270,7 +275,13 @@ export class RecruitmentService {
             await notification.save();
 
         } else if (response === 'rejected') {
-            offer.finalStatus = 'declined' as any;
+            offer.finalStatus = OfferFinalStatus.REJECTED;
+
+            // Update candidate status to REJECTED
+            await this.employeeService.updateCandidateStatus(
+                candidateId,
+                'REJECTED'
+            );
 
             // Notify HR
             const notification = new this.notificationModel({
@@ -380,24 +391,44 @@ export class RecruitmentService {
         await contract.save();
 
         // Get candidateId from the offer for onboarding and bonus processing
-        const populatedContract = await this.contractModel.findById(contractId).populate('offerId');
+        const populatedContract = await this.contractModel.findById(contractId)
+            .populate({
+                path: 'offerId',
+                populate: {
+                    path: 'candidateId',
+                    model: 'Candidate'
+                }
+            });
         const offer = populatedContract?.offerId as any;
 
         // Automatically trigger onboarding when BOTH employee and HR have signed
         if (offer?.candidateId) {
-            // Create employee profile first
+            const candidate = offer.candidateId;
+            
+            // Update candidate status to HIRED
+            await this.employeeService.updateCandidateStatus(
+                candidate._id ? candidate._id.toString() : candidate.toString(),
+                'HIRED'
+            );
+
+            // Create employee profile first using candidate's actual data
             const employeeData = {
-                firstName: offer.candidateId.firstName || 'New',
-                lastName: offer.candidateId.lastName || 'Employee',
-                nationalId: offer.candidateId.nationalId || `TEMP-${Date.now()}`,
+                firstName: candidate.firstName || 'New',
+                lastName: candidate.lastName || 'Employee',
+                nationalId: candidate.nationalId,
                 employeeNumber: `EMP-${Date.now()}`,
                 dateOfHire: new Date(),
-                workEmail: offer.candidateId.email,
+                workEmail: candidate.personalEmail,
                 status: 'PROBATION' as any,
                 contractStartDate: new Date(),
-                contractType: 'PERMANENT' as any,
+                contractType: 'FULL_TIME_CONTRACT' as any,
                 workType: 'FULL_TIME' as any,
             };
+
+            // Validate that candidate has a national ID
+            if (!employeeData.nationalId) {
+                throw new BadRequestException('Candidate must have a national ID before creating employee profile');
+            }
 
             const createdEmployee = await this.employeeService.onboard(employeeData);
             const employeeProfileId = String((createdEmployee as any)._id || (createdEmployee as any).id);
@@ -407,6 +438,7 @@ export class RecruitmentService {
             
             await this.createOnboardingWithDefaults({
                 employeeId: employeeProfileId,
+                contractId: contractId,
                 startDate: startDate.toISOString(),
                 includeITTasks: true,
                 includeAdminTasks: true,
@@ -424,6 +456,18 @@ export class RecruitmentService {
                 isRead: false,
             });
             await welcomeNotification.save();
+
+            // Send notification to candidate (before they become employee) about acceptance
+            const candidateNotification = new this.notificationModel({
+                recipientId: [new mongoose.Types.ObjectId(offer.candidateId._id.toString())],
+                type: 'Success',
+                deliveryType: 'UNICAST',
+                title: 'Contract Fully Signed - You Are Hired!',
+                message: `Congratulations! Your employment contract has been fully signed by HR. You have been officially hired! Your Employee ID is: ${employeeData.employeeNumber}. Your work email will be: ${employeeData.workEmail || 'assigned soon'}. Your start date is ${startDate.toDateString()}. Welcome to the team!`,
+                relatedModule: 'Recruitment',
+                isRead: false,
+            });
+            await candidateNotification.save();
         }
 
         // Automatically process signing bonus when BOTH employee and HR have signed
@@ -556,8 +600,13 @@ export class RecruitmentService {
         }
 
         // Create new onboarding if none exists
+        if (!dto.contractId) {
+            throw new BadRequestException('contractId is required when creating a new onboarding');
+        }
+
         onboarding = new this.onboardingModel({
             employeeId: new mongoose.Types.ObjectId(employeeId),
+            contractId: new mongoose.Types.ObjectId(dto.contractId),
             tasks: formattedTasks,
             completed: false,
         });
@@ -578,7 +627,7 @@ export class RecruitmentService {
     //ONB-012
     //ONB-013
     async createOnboardingWithDefaults(dto: CreateOnboardingWithDefaultsDto) {
-        const { employeeId, startDate, includeITTasks = true, includeAdminTasks = true, includeHRTasks = true } = dto;
+        const { employeeId, contractId, startDate, includeITTasks = true, includeAdminTasks = true, includeHRTasks = true } = dto;
 
         const deadline = startDate ? new Date(startDate) : new Date();
         const tasks: any[] = [];
@@ -658,6 +707,10 @@ export class RecruitmentService {
         if (onboarding) {
             // Add new tasks to existing onboarding
             onboarding.tasks.push(...tasks);
+            // Update contractId if provided
+            if (contractId) {
+                onboarding.contractId = new mongoose.Types.ObjectId(contractId);
+            }
             await onboarding.save();
 
             return {
@@ -676,13 +729,38 @@ export class RecruitmentService {
         }
 
         // Create new onboarding if none exists
+        if (!contractId) {
+            throw new BadRequestException('contractId is required when creating a new onboarding');
+        }
+
         onboarding = new this.onboardingModel({
             employeeId: new mongoose.Types.ObjectId(employeeId),
+            contractId: new mongoose.Types.ObjectId(contractId),
             tasks,
             completed: false,
         });
 
         await onboarding.save();
+
+        // Send notification to System Admin for IT and Admin tasks
+        if (includeITTasks || includeAdminTasks) {
+            const itAdminTaskCount = (includeITTasks ? 3 : 0) + (includeAdminTasks ? 2 : 0);
+            const tasksList: string[] = [];
+            if (includeITTasks) tasksList.push('IT setup tasks (Email, Laptop, System Access)');
+            if (includeAdminTasks) tasksList.push('Admin tasks (Workspace, ID Badge)');
+            
+            const adminNotification = new this.notificationModel({
+                recipientId: [],
+                type: 'Info',
+                deliveryType: 'BROADCAST',
+                deliverToRole: 'System Admin',
+                title: 'New Employee Onboarding Tasks Assigned',
+                message: `New onboarding tasks have been created for employee ${employeeId}. Tasks: ${tasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${itAdminTaskCount}.`,
+                relatedModule: 'Recruitment',
+                isRead: false,
+            });
+            await adminNotification.save();
+        }
 
         return {
             success: true,

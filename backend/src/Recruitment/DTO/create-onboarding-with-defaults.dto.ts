@@ -1,9 +1,13 @@
-import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsDateString, IsMongoId } from 'class-validator';
 
 export class CreateOnboardingWithDefaultsDto {
   @IsNotEmpty()
   @IsString()
   employeeId: string;
+
+  @IsOptional()
+  @IsMongoId()
+  contractId?: string;
 
   @IsOptional()
   @IsDateString()

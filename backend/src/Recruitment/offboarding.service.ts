@@ -499,7 +499,7 @@ export class OffboardingService {
     // Employee resigning > Line Manager > Financial approval > HR processing/approval
     // Retrieve employee's supervisor/manager from EmployeeProfile schema
     
-    let managerNotificationSent = false;
+    //let managerNotificationSent = false;
 
     if (employee.supervisorPositionId) {
 
@@ -527,7 +527,7 @@ export class OffboardingService {
 
       await this.notificationService.create(managerNotificationPayload as any);
 
-      managerNotificationSent = true;
+      //managerNotificationSent = true;
       console.log(`Notification sent to line manager for resignation approval`);
     }
     

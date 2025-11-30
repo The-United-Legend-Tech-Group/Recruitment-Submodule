@@ -24,6 +24,7 @@ import { Onboarding, OnboardingSchema } from './models/onboarding.schema';
 import { AppraisalRecord, AppraisalRecordSchema } from '../employee-subsystem/performance/models/appraisal-record.schema';
 import { EmployeeProfile, EmployeeProfileSchema } from '../employee-subsystem/employee/models/employee-profile.schema';
 import { EmployeeSystemRole, EmployeeSystemRoleSchema } from '../employee-subsystem/employee/models/employee-system-role.schema';
+import { Candidate, CandidateSchema } from '../employee-subsystem/employee/models/candidate.schema';
 import { Notification, NotificationSchema } from '..//../src/employee-subsystem/notification/models/notification.schema';
 
 // Leaves schemas
@@ -61,6 +62,7 @@ import { LeavesModule } from '../leaves/leaves.module';
       { name: AppraisalRecord.name, schema: AppraisalRecordSchema },
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: EmployeeSystemRole.name, schema: EmployeeSystemRoleSchema },
+      { name: Candidate.name, schema: CandidateSchema },
       { name: Notification.name, schema: NotificationSchema },
       
       // Leaves schemas

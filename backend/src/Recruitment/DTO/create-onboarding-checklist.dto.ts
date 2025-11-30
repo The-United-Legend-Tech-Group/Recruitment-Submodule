@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString, IsArray, ValidateNested, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, IsArray, ValidateNested, IsDateString, IsMongoId } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class OnboardingTaskDto {
@@ -22,7 +22,12 @@ export class OnboardingTaskDto {
 export class CreateOnboardingChecklistDto {
   @IsNotEmpty()
   @IsString()
+  @IsMongoId()
   employeeId: string;
+
+  @IsOptional()
+  @IsMongoId()
+  contractId?: string;
 
   @IsNotEmpty()
   @IsArray()
