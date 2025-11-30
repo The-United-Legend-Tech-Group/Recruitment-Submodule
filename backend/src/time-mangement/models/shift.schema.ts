@@ -19,7 +19,7 @@ export class Shift{
     @Prop({required: true})
     endTime: string;
 
-    @Prop({enum: PunchPolicy, default: PunchPolicy.FIRST_LAST})
+    @Prop({type: String, enum: PunchPolicy, default: PunchPolicy.FIRST_LAST})
     punchPolicy: PunchPolicy;
 
     @Prop({ default: 0 })

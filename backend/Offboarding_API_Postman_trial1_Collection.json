@@ -1,0 +1,322 @@
+{
+	"info": {
+		"_postman_id": "offboarding-api-collection",
+		"name": "Offboarding API - Recruitment Subsystem",
+		"description": "Complete Postman collection for testing all offboarding endpoints including termination reviews, checklists, notifications, resignations, access revocation, and department clearances.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Initiate Termination Review",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"employeeId\": \"507f1f77bcf86cd799439011\",\n  \"contractId\": \"507f1f77bcf86cd799439012\",\n  \"initiator\": \"HR\",\n  \"reason\": \"Poor performance based on recent appraisal reviews and multiple warnings.\",\n  \"employeeComments\": \"Employee has been given multiple opportunities for improvement.\",\n  \"hrComments\": \"Termination justified based on performance data from Q3 and Q4 2025.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/initiate-termination-review",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"initiate-termination-review"
+					]
+				},
+				"description": "HR Manager initiates a termination review. Returns 201 on success, 400 for invalid input, 404 if employee/contract not found."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Initiate Offboarding Checklist",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"terminationId\": \"507f1f77bcf86cd799439013\",\n  \"items\": [\n    {\n      \"department\": \"IT\",\n      \"comments\": \"Return laptop, monitor, keyboard, mouse, and access credentials\"\n    },\n    {\n      \"department\": \"Finance\",\n      \"comments\": \"Clear all outstanding expenses and financial obligations\"\n    },\n    {\n      \"department\": \"Facilities\",\n      \"comments\": \"Return office keys, parking card, and building access card\"\n    },\n    {\n      \"department\": \"HR\",\n      \"comments\": \"Complete exit interview and return employee handbook\"\n    }\n  ],\n  \"equipmentList\": [\n    {\n      \"equipmentId\": \"507f1f77bcf86cd799439014\",\n      \"name\": \"Dell Laptop XPS 15\",\n      \"returned\": false,\n      \"condition\": \"Good\"\n    },\n    {\n      \"equipmentId\": \"507f1f77bcf86cd799439015\",\n      \"name\": \"Samsung Monitor 27 inch\",\n      \"returned\": false,\n      \"condition\": \"Excellent\"\n    },\n    {\n      \"equipmentId\": \"507f1f77bcf86cd799439016\",\n      \"name\": \"Office Keys Set\",\n      \"returned\": false,\n      \"condition\": \"Good\"\n    },\n    {\n      \"equipmentId\": \"507f1f77bcf86cd799439017\",\n      \"name\": \"Mobile Phone iPhone 13\",\n      \"returned\": false,\n      \"condition\": \"Good\"\n    }\n  ],\n  \"cardReturned\": false\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/initiate-checklist",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"initiate-checklist"
+					]
+				},
+				"description": "Creates offboarding checklist with department approvals and equipment tracking. Returns 201 on success, 400 if checklist already exists, 404 if termination request not found."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Send Offboarding Notification",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"terminationRequestId\": \"507f1f77bcf86cd799439013\",\n  \"additionalMessage\": \"Please process final settlement within 7 business days. Employee has 20 days of unused annual leave to be encashed.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/send-notification",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"send-notification"
+					]
+				},
+				"description": "Sends notification to HR/Finance/Payroll for benefits termination and final pay calculation. Calculates unused leave for encashment. Returns 201 on success, 404 if termination request not found."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Employee Submit Resignation",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"employeeId\": \"507f1f77bcf86cd799439018\",\n  \"contractId\": \"507f1f77bcf86cd799439019\",\n  \"reason\": \"I have accepted a new position at another company that offers better career growth opportunities and aligns more closely with my long-term career goals.\",\n  \"employeeComments\": \"I am grateful for the experience and opportunities provided during my tenure. I am willing to help with the transition process.\",\n  \"proposedLastWorkingDay\": \"2025-12-31\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/submit-resignation",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"submit-resignation"
+					]
+				},
+				"description": "Employee submits resignation request. Initiates approval workflow. Returns 201 on success, 400 if active resignation exists, 404 if employee/contract not found."
+			},
+			"response": []
+		},
+		{
+			"name": "5. Track Resignation Status",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/offboarding/track-resignation-status?employeeId=507f1f77bcf86cd799439018",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"track-resignation-status"
+					],
+					"query": [
+						{
+							"key": "employeeId",
+							"value": "507f1f77bcf86cd799439018"
+						}
+					]
+				},
+				"description": "Employee tracks their resignation request status. Returns all resignations with current status. Returns 200 on success, 404 if employee not found."
+			},
+			"response": []
+		},
+		{
+			"name": "6. Revoke System Access",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"terminationRequestId\": \"507f1f77bcf86cd799439013\",\n  \"revocationReason\": \"Employee termination approved. Revoking all system access for security compliance.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/revoke-access",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"revoke-access"
+					]
+				},
+				"description": "System Admin revokes all system access for terminated employee. Updates status to TERMINATED and deactivates roles. Returns 200 on success, 400 if termination not approved, 404 if not found."
+			},
+			"response": []
+		},
+		{
+			"name": "7. Department Sign-Off - IT Approve",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"clearanceChecklistId\": \"507f1f77bcf86cd799439020\",\n  \"department\": \"IT\",\n  \"status\": \"APPROVED\",\n  \"approverId\": \"507f1f77bcf86cd799439021\",\n  \"comments\": \"All IT equipment returned in good condition. Access credentials revoked. Clearance approved.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/department-signoff",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"department-signoff"
+					]
+				},
+				"description": "IT Department Head approves clearance. Updates department status and sends notifications. Returns 200 on success, 404 if checklist/department not found."
+			},
+			"response": []
+		},
+		{
+			"name": "8. Department Sign-Off - Finance Approve",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"clearanceChecklistId\": \"507f1f77bcf86cd799439020\",\n  \"department\": \"Finance\",\n  \"status\": \"APPROVED\",\n  \"approverId\": \"507f1f77bcf86cd799439022\",\n  \"comments\": \"All financial obligations cleared. No outstanding expenses. Final pay calculated.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/department-signoff",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"department-signoff"
+					]
+				},
+				"description": "Finance Department Head approves clearance. Returns clearance progress."
+			},
+			"response": []
+		},
+		{
+			"name": "9. Department Sign-Off - Facilities Reject",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"clearanceChecklistId\": \"507f1f77bcf86cd799439020\",\n  \"department\": \"Facilities\",\n  \"status\": \"REJECTED\",\n  \"approverId\": \"507f1f77bcf86cd799439023\",\n  \"comments\": \"Office keys not yet returned. Parking card missing. Please return all items before clearance.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/department-signoff",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"department-signoff"
+					]
+				},
+				"description": "Facilities Department Head rejects clearance. Sends alert to HR for intervention."
+			},
+			"response": []
+		},
+		{
+			"name": "10. Department Sign-Off - HR Approve",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"clearanceChecklistId\": \"507f1f77bcf86cd799439020\",\n  \"department\": \"HR\",\n  \"status\": \"APPROVED\",\n  \"approverId\": \"507f1f77bcf86cd799439024\",\n  \"comments\": \"Exit interview completed. All HR documentation finalized. Employee handbook returned.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/department-signoff",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"department-signoff"
+					]
+				},
+				"description": "HR Department approves clearance. If all departments approved, sends final clearance notification."
+			},
+			"response": []
+		},
+		{
+			"name": "11. Approve Termination Request",
+			"request": {
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"terminationRequestId\": \"507f1f77bcf86cd799439013\",\n  \"status\": \"approved\",\n  \"hrComments\": \"Termination approved by HR Director after review of performance data and manager recommendations.\"\n}"
+				},
+				"url": {
+					"raw": "{{base_url}}/offboarding/approve-termination",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"offboarding",
+						"approve-termination"
+					]
+				},
+				"description": "HR Manager or System Admin approves or rejects termination request. Status must be 'approved', 'rejected', or 'under_review'. Returns 200 on success, 404 if not found."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		}
+	]
+}

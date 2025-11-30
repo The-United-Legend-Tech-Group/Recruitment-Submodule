@@ -1,0 +1,1204 @@
+{
+	"info": {
+		"_postman_id": "offboarding-api-tests-2025",
+		"name": "Offboarding API - Comprehensive Tests",
+		"description": "Complete test suite for Offboarding Service including all functions, scenarios, and edge cases",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Initiate Termination Review",
+			"item": [
+				{
+					"name": "Success - Initiate Termination with Performance Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"{{contractId}}\",\n  \"initiatedBy\": \"hr\",\n  \"reason\": \"Performance issues\",\n  \"hrComments\": \"Multiple warnings issued\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-termination-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-termination-review"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Employee Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"000000000000000000000000\",\n  \"contractId\": \"{{contractId}}\",\n  \"initiatedBy\": \"hr\",\n  \"reason\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-termination-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-termination-review"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Contract Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"000000000000000000000000\",\n  \"initiatedBy\": \"hr\",\n  \"reason\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-termination-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-termination-review"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Active Termination Already Exists",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"{{contractId}}\",\n  \"initiatedBy\": \"hr\",\n  \"reason\": \"Duplicate request test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-termination-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-termination-review"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "2. Approve Termination",
+			"item": [
+				{
+					"name": "Success - Approve Termination",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"status\": \"approved\",\n  \"hrComments\": \"Approved after review\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/approve-termination",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "approve-termination"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Reject Termination",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"status\": \"rejected\",\n  \"hrComments\": \"Insufficient evidence for termination\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/approve-termination",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "approve-termination"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Termination Request Not Found",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationRequestId\": \"000000000000000000000000\",\n  \"status\": \"approved\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/approve-termination",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "approve-termination"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "3. Initiate Offboarding Checklist",
+			"item": [
+				{
+					"name": "Success - Create Checklist with Equipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationId\": \"{{terminationRequestId}}\",\n  \"items\": [\n    {\n      \"department\": \"IT\",\n      \"comments\": \"Laptop and credentials to be returned\"\n    },\n    {\n      \"department\": \"Finance\",\n      \"comments\": \"Clear all expenses\"\n    },\n    {\n      \"department\": \"Facilities\",\n      \"comments\": \"Return access cards and keys\"\n    },\n    {\n      \"department\": \"HR\",\n      \"comments\": \"Complete exit interview\"\n    }\n  ],\n  \"equipmentList\": [\n    {\n      \"equipmentId\": \"{{equipmentId1}}\",\n      \"name\": \"Laptop Dell XPS 15\",\n      \"returned\": false,\n      \"condition\": \"Pending\"\n    },\n    {\n      \"equipmentId\": \"{{equipmentId2}}\",\n      \"name\": \"Monitor Samsung 27\\\"\",\n      \"returned\": false,\n      \"condition\": \"Pending\"\n    }\n  ],\n  \"cardReturned\": false\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-checklist"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Create Checklist with Default Card Status",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationId\": \"{{terminationRequestId}}\",\n  \"items\": [\n    {\n      \"department\": \"IT\"\n    }\n  ],\n  \"equipmentList\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-checklist"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Termination Request Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationId\": \"000000000000000000000000\",\n  \"items\": [{\"department\": \"IT\"}],\n  \"equipmentList\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-checklist"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Checklist Already Exists",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationId\": \"{{terminationRequestId}}\",\n  \"items\": [{\"department\": \"IT\"}],\n  \"equipmentList\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-checklist"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Edge Case - Large Number of Departments",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationId\": \"{{terminationRequestId}}\",\n  \"items\": [\n    {\"department\": \"IT\"},\n    {\"department\": \"Finance\"},\n    {\"department\": \"HR\"},\n    {\"department\": \"Facilities\"},\n    {\"department\": \"Legal\"},\n    {\"department\": \"Marketing\"},\n    {\"department\": \"Sales\"},\n    {\"department\": \"Operations\"},\n    {\"department\": \"Security\"},\n    {\"department\": \"Procurement\"},\n    {\"department\": \"R&D\"},\n    {\"department\": \"Quality\"},\n    {\"department\": \"Training\"},\n    {\"department\": \"Administration\"},\n    {\"department\": \"Customer Service\"},\n    {\"department\": \"Logistics\"},\n    {\"department\": \"Planning\"},\n    {\"department\": \"Compliance\"},\n    {\"department\": \"Audit\"},\n    {\"department\": \"Communications\"}\n  ],\n  \"equipmentList\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-checklist"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "4. Department Sign-Off",
+			"item": [
+				{
+					"name": "Success - Approve IT Department",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clearanceChecklistId\": \"{{checklistId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"department\": \"IT\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{itHeadId}}\",\n  \"comments\": \"All IT equipment returned in good condition\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/department-signoff",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "department-signoff"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Reject Finance Department",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clearanceChecklistId\": \"{{checklistId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"department\": \"Finance\",\n  \"status\": \"rejected\",\n  \"approverId\": \"{{financeHeadId}}\",\n  \"comments\": \"Outstanding expenses not cleared\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/department-signoff",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "department-signoff"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Partial Clearance (Facilities)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clearanceChecklistId\": \"{{checklistId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"department\": \"Facilities\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{facilitiesHeadId}}\",\n  \"comments\": \"Access cards and keys returned\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/department-signoff",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "department-signoff"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Final Department Approval (HR)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clearanceChecklistId\": \"{{checklistId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"department\": \"HR\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{hrHeadId}}\",\n  \"comments\": \"Exit interview completed, all documents signed\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/department-signoff",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "department-signoff"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Checklist Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clearanceChecklistId\": \"000000000000000000000000\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"department\": \"IT\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{itHeadId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/department-signoff",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "department-signoff"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Invalid Department",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"clearanceChecklistId\": \"{{checklistId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"department\": \"InvalidDepartment\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{itHeadId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/department-signoff",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "department-signoff"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "5. Revoke System Access",
+			"item": [
+				{
+					"name": "Success - Revoke Access for Approved Termination",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"revocationReason\": \"Employee terminated\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/revoke-access",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "revoke-access"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Termination Not Approved",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationRequestId\": \"{{pendingTerminationId}}\",\n  \"revocationReason\": \"Test with pending status\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/revoke-access",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "revoke-access"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Termination Request Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationRequestId\": \"000000000000000000000000\",\n  \"revocationReason\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/revoke-access",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "revoke-access"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "6. Send Offboarding Notification",
+			"item": [
+				{
+					"name": "Success - Send Notification with Leave Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"message\": \"Your offboarding process has been initiated. Please review your final settlement details.\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/send-notification",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "send-notification"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Notification with Benefits",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"message\": \"Final settlement notification including benefits termination\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/send-notification",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "send-notification"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Employee Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"000000000000000000000000\",\n  \"terminationRequestId\": \"{{terminationRequestId}}\",\n  \"message\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/send-notification",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "send-notification"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "7. Submit Resignation",
+			"item": [
+				{
+					"name": "Success - Submit Resignation",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"{{contractId}}\",\n  \"reason\": \"Career advancement\",\n  \"employeeComments\": \"Thank you for the opportunity. I have accepted a position elsewhere.\",\n  \"proposedLastWorkingDay\": \"2025-12-31T00:00:00.000Z\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - Resignation with Minimal Data",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId2}}\",\n  \"contractId\": \"{{contractId2}}\",\n  \"reason\": \"Personal reasons\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Employee Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"000000000000000000000000\",\n  \"contractId\": \"{{contractId}}\",\n  \"reason\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Contract Not Found",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"000000000000000000000000\",\n  \"reason\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Active Resignation Exists",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"{{contractId}}\",\n  \"reason\": \"Duplicate resignation test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "8. Track Resignation Status",
+			"item": [
+				{
+					"name": "Success - Track Active Resignation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/track-resignation-status?employeeId={{employeeId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "track-resignation-status"],
+							"query": [
+								{
+									"key": "employeeId",
+									"value": "{{employeeId}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Success - No Resignations Found",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/track-resignation-status?employeeId={{employeeWithNoResignation}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "track-resignation-status"],
+							"query": [
+								{
+									"key": "employeeId",
+									"value": "{{employeeWithNoResignation}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Error - Employee Not Found",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/track-resignation-status?employeeId=000000000000000000000000",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "track-resignation-status"],
+							"query": [
+								{
+									"key": "employeeId",
+									"value": "000000000000000000000000"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "9. Integration Workflows",
+			"item": [
+				{
+					"name": "Complete Offboarding Workflow",
+					"item": [
+						{
+							"name": "Step 1 - Initiate Termination",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"employeeId\": \"{{workflowEmployeeId}}\",\n  \"contractId\": \"{{workflowContractId}}\",\n  \"initiatedBy\": \"hr\",\n  \"reason\": \"End of contract\",\n  \"hrComments\": \"Contract period completed\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/initiate-termination-review",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "initiate-termination-review"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 2 - Approve Termination",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"terminationRequestId\": \"{{workflowTerminationId}}\",\n  \"status\": \"approved\",\n  \"hrComments\": \"Approved for processing\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/approve-termination",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "approve-termination"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 3 - Create Checklist",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"terminationId\": \"{{workflowTerminationId}}\",\n  \"items\": [\n    {\"department\": \"IT\"},\n    {\"department\": \"Finance\"},\n    {\"department\": \"HR\"}\n  ],\n  \"equipmentList\": [],\n  \"cardReturned\": false\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "initiate-checklist"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 4 - IT Sign-off",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"clearanceChecklistId\": \"{{workflowChecklistId}}\",\n  \"terminationRequestId\": \"{{workflowTerminationId}}\",\n  \"department\": \"IT\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{itHeadId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/department-signoff",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "department-signoff"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 5 - Finance Sign-off",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"clearanceChecklistId\": \"{{workflowChecklistId}}\",\n  \"terminationRequestId\": \"{{workflowTerminationId}}\",\n  \"department\": \"Finance\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{financeHeadId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/department-signoff",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "department-signoff"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 6 - HR Sign-off",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"clearanceChecklistId\": \"{{workflowChecklistId}}\",\n  \"terminationRequestId\": \"{{workflowTerminationId}}\",\n  \"department\": \"HR\",\n  \"status\": \"approved\",\n  \"approverId\": \"{{hrHeadId}}\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/department-signoff",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "department-signoff"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 7 - Revoke Access",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"terminationRequestId\": \"{{workflowTerminationId}}\",\n  \"revocationReason\": \"Employee offboarded\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/revoke-access",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "revoke-access"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 8 - Send Final Notification",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"employeeId\": \"{{workflowEmployeeId}}\",\n  \"terminationRequestId\": \"{{workflowTerminationId}}\",\n  \"message\": \"Final settlement and offboarding complete\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/send-notification",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "send-notification"]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Resignation Workflow",
+					"item": [
+						{
+							"name": "Step 1 - Submit Resignation",
+							"request": {
+								"method": "POST",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"employeeId\": \"{{resignationEmployeeId}}\",\n  \"contractId\": \"{{resignationContractId}}\",\n  \"reason\": \"Better opportunity\",\n  \"employeeComments\": \"Moving to a new role\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/submit-resignation",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "submit-resignation"]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 2 - Track Status",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/track-resignation-status?employeeId={{resignationEmployeeId}}",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "track-resignation-status"],
+									"query": [
+										{
+											"key": "employeeId",
+											"value": "{{resignationEmployeeId}}"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Step 3 - Approve Resignation",
+							"request": {
+								"method": "PATCH",
+								"header": [
+									{
+										"key": "Content-Type",
+										"value": "application/json"
+									}
+								],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"terminationRequestId\": \"{{resignationRequestId}}\",\n  \"status\": \"approved\",\n  \"hrComments\": \"Resignation accepted\"\n}"
+								},
+								"url": {
+									"raw": "{{baseUrl}}/offboarding/approve-termination",
+									"host": ["{{baseUrl}}"],
+									"path": ["offboarding", "approve-termination"]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "10. Edge Cases & Error Scenarios",
+			"item": [
+				{
+					"name": "Invalid ObjectId Format",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"invalid-id-format\",\n  \"contractId\": \"{{contractId}}\",\n  \"initiatedBy\": \"hr\",\n  \"reason\": \"Test\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-termination-review",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-termination-review"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Missing Required Fields",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Empty Equipment List",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"terminationId\": \"{{terminationRequestId}}\",\n  \"items\": [{\"department\": \"IT\"}],\n  \"equipmentList\": []\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/initiate-checklist",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "initiate-checklist"]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Null Optional Fields",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"employeeId\": \"{{employeeId}}\",\n  \"contractId\": \"{{contractId}}\",\n  \"reason\": \"Personal\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/offboarding/submit-resignation",
+							"host": ["{{baseUrl}}"],
+							"path": ["offboarding", "submit-resignation"]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "employeeId",
+			"value": "REPLACE_WITH_VALID_EMPLOYEE_ID",
+			"type": "string"
+		},
+		{
+			"key": "contractId",
+			"value": "REPLACE_WITH_VALID_CONTRACT_ID",
+			"type": "string"
+		},
+		{
+			"key": "terminationRequestId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "checklistId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "itHeadId",
+			"value": "REPLACE_WITH_IT_HEAD_ID",
+			"type": "string"
+		},
+		{
+			"key": "financeHeadId",
+			"value": "REPLACE_WITH_FINANCE_HEAD_ID",
+			"type": "string"
+		},
+		{
+			"key": "facilitiesHeadId",
+			"value": "REPLACE_WITH_FACILITIES_HEAD_ID",
+			"type": "string"
+		},
+		{
+			"key": "hrHeadId",
+			"value": "REPLACE_WITH_HR_HEAD_ID",
+			"type": "string"
+		},
+		{
+			"key": "equipmentId1",
+			"value": "REPLACE_WITH_EQUIPMENT_ID_1",
+			"type": "string"
+		},
+		{
+			"key": "equipmentId2",
+			"value": "REPLACE_WITH_EQUIPMENT_ID_2",
+			"type": "string"
+		},
+		{
+			"key": "pendingTerminationId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "workflowEmployeeId",
+			"value": "REPLACE_WITH_WORKFLOW_EMPLOYEE_ID",
+			"type": "string"
+		},
+		{
+			"key": "workflowContractId",
+			"value": "REPLACE_WITH_WORKFLOW_CONTRACT_ID",
+			"type": "string"
+		},
+		{
+			"key": "workflowTerminationId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "workflowChecklistId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "resignationEmployeeId",
+			"value": "REPLACE_WITH_RESIGNATION_EMPLOYEE_ID",
+			"type": "string"
+		},
+		{
+			"key": "resignationContractId",
+			"value": "REPLACE_WITH_RESIGNATION_CONTRACT_ID",
+			"type": "string"
+		},
+		{
+			"key": "resignationRequestId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "employeeWithNoResignation",
+			"value": "REPLACE_WITH_EMPLOYEE_WITHOUT_RESIGNATION",
+			"type": "string"
+		},
+		{
+			"key": "employeeId2",
+			"value": "REPLACE_WITH_SECOND_EMPLOYEE_ID",
+			"type": "string"
+		},
+		{
+			"key": "contractId2",
+			"value": "REPLACE_WITH_SECOND_CONTRACT_ID",
+			"type": "string"
+		}
+	]
+}

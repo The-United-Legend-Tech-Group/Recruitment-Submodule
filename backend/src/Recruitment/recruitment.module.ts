@@ -22,6 +22,9 @@ import {
   EmployeeTerminationResignation,
   EmployeeTerminationResignationSchema,
 } from '../payroll/execution/models/EmployeeTerminationResignation.schema';
+import { EmployeeModule } from '../employee-subsystem/employee/employee.module';
+import { NotificationModule } from '../employee-subsystem/notification/notification.module';
+import { LeavesModule } from '../leaves/leaves.module';
 
 @Module({
   imports: [
@@ -40,6 +43,9 @@ import {
         schema: EmployeeTerminationResignationSchema,
       },
     ]),
+    EmployeeModule,
+    NotificationModule,
+    LeavesModule,
   ],
   controllers: [
     RecruitmentController,

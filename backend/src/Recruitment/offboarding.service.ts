@@ -18,10 +18,14 @@ import { SubmitResignationDto } from './offboardingDtos/submit-resignation.dto';
 import { TrackResignationStatusDto } from './offboardingDtos/track-resignation-status.dto';
 import { RevokeSystemAccessDto } from './offboardingDtos/revoke-system-access.dto';
 import { DepartmentClearanceSignOffDto } from './offboardingDtos/department-clearance-signoff.dto';
+import { ApproveTerminationDto } from './offboardingDtos/approve-termination.dto';
 import { TerminationStatus } from './enums/termination-status.enum';
 import { TerminationInitiation } from './enums/termination-initiation.enum';
 import { ApprovalStatus } from './enums/approval-status.enum';
 import { EmployeeStatus } from '../employee-subsystem/employee/enums/employee-profile.enums';
+import { EmployeeService } from '../employee-subsystem/employee/employee.service';
+import { NotificationService } from '../employee-subsystem/notification/notification.service';
+import { LeavesService } from '../leaves/leaves.service';
 @Injectable()
 export class OffboardingService {
   constructor(
@@ -45,6 +49,9 @@ export class OffboardingService {
     private leaveTypeModel: Model<LeaveTypeDocument>,
     @InjectModel(EmployeeTerminationResignation.name)
     private employeeTerminationResignationModel: Model<EmployeeTerminationResignationDocument>,
+    private employeeService: EmployeeService,
+    private notificationService: NotificationService,
+    private leavesService: LeavesService,
   ) {}
 
 
@@ -58,15 +65,18 @@ export class OffboardingService {
     const employeeObjectId = new Types.ObjectId(dto.employeeId);
     const contractObjectId = new Types.ObjectId(dto.contractId);
 
-    //TODO:maybe we will use service of the employeeProfileModel instead 
-
-    const employee = await this.employeeProfileModel.findById(employeeObjectId).exec();
+    // Use EmployeeService instead of direct model call
+    const employee = await this.employeeService.getEmployeeById(dto.employeeId);
+    
     if (!employee) {
       console.error(`Employee with ID ${dto.employeeId} not found`);
       throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
     }
+    
     console.log(`Employee ${dto.employeeId} validated successfully`);
+    
     const contract = await this.contractModel.findById(contractObjectId).exec();
+    
     if (!contract) {
       console.error(`Contract with ID ${dto.contractId} not found`);
       throw new NotFoundException(`Contract with ID ${dto.contractId} not found`);
@@ -87,12 +97,10 @@ export class OffboardingService {
       console.warn(`Employee ${dto.employeeId} already has an active termination request`);
       throw new BadRequestException(`Employee ${dto.employeeId} already has an active termination request with status ${existingTerminationRequest.status}`);
     }
-    const latestAppraisal = await this.appraisalRecordModel
-      .findOne({
-        employeeProfileId: employeeObjectId,
-      })
-      .sort({ createdAt: -1 }) //added value to be -1 to sort by the latest records
-      .exec();
+
+    // Use EmployeeService to get appraisal records
+    const appraisalRecords = await this.employeeService.getAppraisalRecordsByEmployeeId(dto.employeeId);
+    const latestAppraisal = appraisalRecords.length > 0 ? appraisalRecords[0] : null;
 
     if (latestAppraisal) {
       console.log(`Found performance data for employee ${dto.employeeId}: Score ${latestAppraisal.totalScore}, Status: ${latestAppraisal.status}`);
@@ -100,16 +108,19 @@ export class OffboardingService {
       console.log(
         `No performance data found for employee ${dto.employeeId}`,
       );
+      //TODO: do i add throw error if the employee don't have performance record?
     }
 
     //  TODO: what factors do we consider before making the termiantion request
     //e.g: specific score,specific rating,etc?
-
+    
+   
     const terminationRequest = new this.terminationRequestModel({
       employeeId: employeeObjectId,
       contractId: contractObjectId,
       initiator: dto.initiator,
       reason: dto.reason,
+      //TODO: in case the employee didn't write a comment what should be done in this case?
       employeeComments: dto.employeeComments,
       hrComments: dto.hrComments,
       status: TerminationStatus.PENDING
@@ -158,6 +169,10 @@ export class OffboardingService {
     //TODO
     //Will we take each department from different subsystems?
     //e.g : finance from payroll , IT from employee subsystem
+    // two options:
+   //1- send notification to each department requesting id cards, assets , equ, and waitng the response with these stuff (in case subsystem one included notification for each department)
+
+   //2- manually in the request i write each department alongside the equipements and these stuff and  (is the simplest one)
 
     const departmentItems = dto.items.map((item) => ({
       department: item.department,
@@ -229,49 +244,31 @@ export class OffboardingService {
       throw new BadRequestException(`Cannot revoke access for termination request with status: ${terminationRequest.status}. Only APPROVED terminations can have access revoked.`);
     }
 
-    const employee = await this.employeeProfileModel
-      .findById(terminationRequest.employeeId)
-      .exec();
+    const statusUpdateResult = await this.employeeService.updateEmployeeStatusToTerminated(
+      terminationRequest.employeeId.toString()
+    );
 
-    if (!employee) {
-      console.error(`Employee with ID ${terminationRequest.employeeId} not found`);
-      throw new NotFoundException(`Employee with ID ${terminationRequest.employeeId} not found`);
-    }
-    console.log(`Employee ${employee.employeeNumber} retrieved successfully. Current status: ${employee.status}`);
-
-    const previousStatus = employee.status;
-    
-    employee.status = EmployeeStatus.TERMINATED;
-    employee.statusEffectiveFrom = new Date(); // Set effective date to now
-
-    await employee.save();
+    const employee = statusUpdateResult.employee;
+    const previousStatus = statusUpdateResult.previousStatus;
 
     console.log(`Employee ${employee.employeeNumber} status updated from ${previousStatus} to ${EmployeeStatus.TERMINATED}`);
 
-    const systemRole = await this.employeeSystemRoleModel
-      .findOne({
-        employeeProfileId: terminationRequest.employeeId,
-      })
-      .exec();
+    const roleDeactivationResult = await this.employeeService.deactivateSystemRole(
+      terminationRequest.employeeId.toString()
+    );
 
-    let rolesDeactivated = false;
-    let previousRoles: string[] = [];
-    let previousPermissions: string[] = [];
+    const rolesDeactivated = roleDeactivationResult.rolesDeactivated;
+    const previousRoles = roleDeactivationResult.previousRoles;
+    const previousPermissions = roleDeactivationResult.previousPermissions;
 
-    if (systemRole) {
-      previousRoles = [...systemRole.roles];
-      previousPermissions = [...systemRole.permissions];
-      systemRole.isActive = false;
-
-      await systemRole.save();
-
-      rolesDeactivated = true;
-
+    if (rolesDeactivated) {
       console.log(`System access revoked for employee ${employee.employeeNumber}`);
       console.log(`Deactivated roles: ${previousRoles.join(', ')}`);
       console.log(`Revoked permissions: ${previousPermissions.length} permission(s)`);
     } else {
       console.warn(`No system role found for employee ${employee.employeeNumber}`);
+
+      //TODO: should i add throw error here?
     }
 
 
@@ -285,11 +282,8 @@ export class OffboardingService {
       relatedModule: 'Recruitment',
       isRead: false,
     };
-    //TODO: we will use the notificationService instead 
-    const securityNotification = new this.notificationModel(
-      securityNotificationPayload,
-    );
-    await securityNotification.save();
+    
+    await this.notificationService.create(securityNotificationPayload as any);
 
     console.log(`Security notification sent for access revocation of employee ${employee.employeeNumber}`);
 
@@ -303,11 +297,8 @@ export class OffboardingService {
       relatedModule: 'Recruitment',
       isRead: false,
     };
-    //TODO: we will use the notificationService instead 
-    const employeeNotification = new this.notificationModel(
-      employeeNotificationPayload,
-    );
-    await employeeNotification.save();
+    
+    await this.notificationService.create(employeeNotificationPayload as any);
 
     console.log(`Informational notification sent to terminated employee ${employee.employeeNumber}`);
 
@@ -315,7 +306,7 @@ export class OffboardingService {
     
     return {
       message: `System and account access successfully revoked for employee ${employee.employeeNumber}`,
-      employeeId: employee._id.toString(),
+      employeeId: terminationRequest.employeeId.toString(),
       employeeNumber: employee.employeeNumber,
       previousStatus: previousStatus,
       newStatus: EmployeeStatus.TERMINATED,
@@ -323,6 +314,7 @@ export class OffboardingService {
       rolesDeactivated: rolesDeactivated,
     };
   }
+
 
 
 
@@ -347,9 +339,9 @@ export class OffboardingService {
 
     console.log(`Termination request ${dto.terminationRequestId} validated successfully`);
     
-    const employee = await this.employeeProfileModel
-      .findById(terminationRequest.employeeId)
-      .exec();
+    const employee = await this.employeeService.getEmployeeById(
+      terminationRequest.employeeId.toString()
+    );
 
     if (!employee) {
       console.error(`Employee with ID ${terminationRequest.employeeId} not found`);
@@ -358,12 +350,9 @@ export class OffboardingService {
 
     console.log(`Employee ${employee.employeeNumber} retrieved successfully`);
 
-    const leaveEntitlements = await this.leaveEntitlementModel
-      .find({
-        employeeId: terminationRequest.employeeId,
-      })
-      .populate('leaveTypeId')
-      .exec();
+    const leaveEntitlements = await this.leavesService.getLeaveEntitlementsByEmployeeId(
+      terminationRequest.employeeId.toString()
+    );
 
     let totalUnusedAnnualLeave = 0;
     const unusedLeaveDetails: string[] = [];
@@ -382,7 +371,9 @@ export class OffboardingService {
     }
 
     console.log(`Leave balance reviewed: ${totalUnusedAnnualLeave} days of unused annual leave found`);
+  
 
+    //mostafa first
     const benefitTerminations = await this.employeeTerminationResignationModel
       .find({
         employeeId: terminationRequest.employeeId,
@@ -456,11 +447,9 @@ export class OffboardingService {
       isRead: false,
     };
 
-    const notification = new this.notificationModel(notificationPayload);
+    const savedNotification = await this.notificationService.create(notificationPayload as any);
 
-    const savedNotification = await notification.save();
-
-    console.log(`Offboarding notification sent successfully with ID ${savedNotification._id}`);
+    console.log(`Offboarding notification sent successfully`);
     console.log(`Notification covers: ${totalUnusedAnnualLeave} days unused leave, ${benefitTerminations.length} benefit records`);
 
     return savedNotification;
@@ -475,9 +464,7 @@ export class OffboardingService {
     const employeeObjectId = new Types.ObjectId(dto.employeeId);
     const contractObjectId = new Types.ObjectId(dto.contractId);
 
-    const employee = await this.employeeProfileModel
-      .findById(employeeObjectId)
-      .exec();
+    const employee = await this.employeeService.getEmployeeById(dto.employeeId);
 
     if (!employee) {
       console.error(`Employee with ID ${dto.employeeId} not found`);
@@ -554,10 +541,7 @@ export class OffboardingService {
         isRead: false,
       };
 
-      const managerNotification = new this.notificationModel(
-        managerNotificationPayload,
-      );
-      await managerNotification.save();
+      await this.notificationService.create(managerNotificationPayload as any);
 
       managerNotificationSent = true;
       console.log(`Notification sent to line manager for resignation approval`);
@@ -595,10 +579,7 @@ export class OffboardingService {
       isRead: false,
     };
 
-    const employeeNotification = new this.notificationModel(
-      employeeNotificationPayload,
-    );
-    await employeeNotification.save();
+    await this.notificationService.create(employeeNotificationPayload as any);
 
     console.log(`Confirmation notification sent to employee`);
 
@@ -613,9 +594,7 @@ export class OffboardingService {
     console.log(`Employee ${dto.employeeId} tracking resignation status`);
     const employeeObjectId = new Types.ObjectId(dto.employeeId);
 
-    const employee = await this.employeeProfileModel
-      .findById(employeeObjectId)
-      .exec();
+    const employee = await this.employeeService.getEmployeeById(dto.employeeId);
 
     if (!employee) {
       console.error(`Employee with ID ${dto.employeeId} not found`);
@@ -659,9 +638,9 @@ export class OffboardingService {
   async processDepartmentSignOff(dto: DepartmentClearanceSignOffDto): Promise<{
     message: string;
     clearanceChecklistId: string;
-    department: string;
+    department: string; // can we take it from the token?
     status: string;
-    approverId: string;
+    approverId: string; // can we take it from the token?
     allDepartmentsApproved: boolean;
     anyDepartmentRejected: boolean;
     pendingDepartments: string[];
@@ -777,11 +756,7 @@ export class OffboardingService {
         isRead: false,
       };
 
-      // Create and save the employee notification
-      const employeeNotification = new this.notificationModel(
-        employeeNotificationPayload,
-      );
-      await employeeNotification.save();
+      await this.notificationService.create(employeeNotificationPayload as any);
 
       console.log(`Department sign-off notification sent to employee`);
 
@@ -805,10 +780,7 @@ export class OffboardingService {
           isRead: false,
         };
 
-        const completionNotification = new this.notificationModel(
-          completionNotificationPayload,
-        );
-        await completionNotification.save();
+        await this.notificationService.create(completionNotificationPayload as any);
 
         console.log(`Full clearance completion notification sent`);
       }
@@ -837,9 +809,7 @@ export class OffboardingService {
           isRead: false,
         };
 
-        // Create and save the rejection alert notification
-        const rejectionAlert = new this.notificationModel(rejectionAlertPayload);
-        await rejectionAlert.save();
+        await this.notificationService.create(rejectionAlertPayload as any);
 
         console.log(`Rejection alert sent to HR for ${dto.department}`);
       }
@@ -863,5 +833,77 @@ export class OffboardingService {
         pending: pendingCount,
       },
     };
+  }
+
+  //OFF-020
+  //Approve or reject termination request
+  async approveTermination(dto: ApproveTerminationDto): Promise<TerminationRequest> {
+    console.log(`Updating termination request ${dto.terminationRequestId} to status ${dto.status}`);
+
+    const terminationObjectId = new Types.ObjectId(dto.terminationRequestId);
+
+    const terminationRequest = await this.terminationRequestModel
+      .findById(terminationObjectId)
+      .exec();
+
+    if (!terminationRequest) {
+      console.error(`Termination request with ID ${dto.terminationRequestId} not found`);
+      throw new NotFoundException(`Termination request with ID ${dto.terminationRequestId} not found`);
+    }
+
+    const previousStatus = terminationRequest.status;
+
+    terminationRequest.status = dto.status;
+    
+    if (dto.hrComments) {
+      terminationRequest.hrComments = dto.hrComments;
+    }
+
+    await terminationRequest.save();
+
+    console.log(`Termination request ${dto.terminationRequestId} status updated from ${previousStatus} to ${dto.status}`);
+
+    return terminationRequest;
+  }
+
+
+   async getDepartmentHeadId(department: string): Promise<Types.ObjectId | null> {
+    try {
+      const departmentHead = await this.employeeService.findDepartmentHead(department);
+      
+      if (departmentHead && departmentHead.id) {
+        console.log(`Found department head for ${department}: ${departmentHead.employeeNumber}`);
+        return new Types.ObjectId(departmentHead.id);
+      }
+      
+      return null;
+    } catch (error) {
+      console.error(`Error finding department head for ${department}:`, error.message);
+      return null;
+    }
+  }
+  
+  async getDepartmentChecklistItems(department: string): Promise<string> {
+    const checklistMap = {
+      IT: `- Laptop and equipment returned
+- System access credentials collected
+- Software licenses revoked
+- Email account disabled`,
+      Finance: `- Outstanding expenses cleared
+- Company credit cards returned
+- Financial obligations settled
+- Petty cash returned`,
+      Facilities: `- Office keys and access cards returned
+- Parking pass surrendered
+- Workspace cleared and inspected
+- Company property returned`,
+      HR: `- Exit interview completed
+- Final documents signed
+- Personal files updated
+- Employee handbook returned`,
+    };
+
+    return checklistMap[department] || `- Standard clearance items
+- All department obligations cleared`;
   }
 }

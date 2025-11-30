@@ -10,7 +10,7 @@ export class TimeException{
     @Prop({type: Types.ObjectId, ref: 'EmployeeProfile', required: true})
     employeeId: Types.ObjectId;
 
-    @Prop({enum: TimeExceptionType, required: true})
+    @Prop({type: String, enum: TimeExceptionType, required: true})
     type: TimeExceptionType;
 
     @Prop({type: Types.ObjectId, ref: 'AttendanceRecord', required: true})
@@ -19,7 +19,7 @@ export class TimeException{
     @Prop({type: Types.ObjectId, ref: 'EmployeeProfile', required: true})
     assignedTo: Types.ObjectId; // person responsible for handling the exception
 
-    @Prop({ enum: TimeExceptionStatus, default: TimeExceptionStatus.OPEN })
+    @Prop({ type: String, enum: TimeExceptionStatus, default: TimeExceptionStatus.OPEN })
     status: TimeExceptionStatus;
 
     @Prop()

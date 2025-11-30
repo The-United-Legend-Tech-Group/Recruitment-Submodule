@@ -1,4 +1,4 @@
-import {Controller,Post,Body,HttpCode,HttpStatus,UsePipes,ValidationPipe,Get,Query,HttpException,BadRequestException,NotFoundException} from '@nestjs/common';
+import {Controller,Post,Body,HttpCode,HttpStatus,UsePipes,ValidationPipe,Get,Query,Patch,HttpException,BadRequestException,NotFoundException} from '@nestjs/common';
 import {ApiTags,ApiOperation,ApiResponse,ApiBadRequestResponse,ApiNotFoundResponse,ApiCreatedResponse,ApiOkResponse} from '@nestjs/swagger';
 import { OffboardingService } from './offboarding.service';
 import { InitiateTerminationReviewDto } from './offboardingDtos/initiate-termination-review.dto';
@@ -8,6 +8,7 @@ import { SubmitResignationDto } from './offboardingDtos/submit-resignation.dto';
 import { TrackResignationStatusDto } from './offboardingDtos/track-resignation-status.dto';
 import { RevokeSystemAccessDto } from './offboardingDtos/revoke-system-access.dto';
 import { DepartmentClearanceSignOffDto } from './offboardingDtos/department-clearance-signoff.dto';
+import { ApproveTerminationDto } from './offboardingDtos/approve-termination.dto';
 import { TerminationRequest } from './models/termination-request.schema';
 import { ClearanceChecklist } from './models/clearance-checklist.schema';
 import { Notification } from '../employee-subsystem/notification/schema/notification.schema';
@@ -115,5 +116,16 @@ export class OffboardingController {
     };
   }> {
     return this.offboardingService.processDepartmentSignOff(dto);
+  }
+
+  @Patch('approve-termination')
+  @ApiOperation({ summary: 'Approve or reject termination request' })
+  @ApiOkResponse({ description: 'Termination status updated successfully', type: TerminationRequest })
+  @ApiBadRequestResponse({ description: 'Invalid termination request ID' })
+  @ApiNotFoundResponse({ description: 'Termination request not found' })
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  async approveTermination(@Body() dto: ApproveTerminationDto): Promise<TerminationRequest> {
+    return this.offboardingService.approveTermination(dto);
   }
 }

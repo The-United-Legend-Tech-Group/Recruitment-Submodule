@@ -19,7 +19,7 @@ export class Interview {
   @Prop()
   scheduledDate: Date;
 
-  @Prop({ enum: InterviewMethod })
+  @Prop({ type: String, enum: InterviewMethod })
   method: InterviewMethod;
 
   @Prop([{ type: Types.ObjectId, ref: 'User' }])

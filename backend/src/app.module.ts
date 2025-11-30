@@ -10,11 +10,13 @@ import { ConfigSetupModule } from './payroll/config_setup/config_setup.module';
 import { TrackingModule } from './payroll/tracking/tracking.module';
 import { ExecutionModule } from './payroll/execution/execution.module';
 import { RecruitmentModule } from './Recruitment/recruitment.module';
+import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
     // Load .env into process.env and make ConfigService global
     ConfigModule.forRoot({ isGlobal: true }),
+    MongooseModule.forRoot('mongodb://localhost:27017/hr'),
     // Central database connection and shared schemas
     DatabaseModule,
     // Time management subsystem module
