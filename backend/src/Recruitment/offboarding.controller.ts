@@ -62,6 +62,8 @@ export class OffboardingController {
     return this.offboardingService.submitResignation(dto);
   }
 
+
+  //can you take the id from the token directly instead of using it as a params
   @Get('track-resignation-status')
   @ApiOperation({ summary: 'Track employee resignation request status' })
   @ApiOkResponse({ description: 'Resignation status retrieved successfully', type: [TerminationRequest] })

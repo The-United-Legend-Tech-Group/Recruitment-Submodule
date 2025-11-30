@@ -35,6 +35,7 @@ export class CreateNotificationDto {
   @IsNotEmpty()
   deliveryType: string;
 
+
   @ApiProperty({ description: 'Title of the notification' })
   @IsString()
   @IsNotEmpty()

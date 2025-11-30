@@ -137,6 +137,7 @@ export class OffboardingService {
   async initiateOffboardingChecklist(dto: InitiateOffboardingChecklistDto,
   ): Promise<ClearanceChecklist> {
     console.log(`Initiating offboarding checklist for termination request ${dto.terminationId}`);
+    
 
     const terminationObjectId = new Types.ObjectId(dto.terminationId);
     

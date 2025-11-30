@@ -22,5 +22,6 @@ export class TeamSummaryDto {
   managerId: string;
 
   @ApiProperty({ type: [TeamSummaryItemDto] })
+  
   items: TeamSummaryItemDto[];
 }

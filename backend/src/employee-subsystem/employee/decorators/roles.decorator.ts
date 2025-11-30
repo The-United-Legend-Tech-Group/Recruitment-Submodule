@@ -1,4 +1,4 @@
-import { SetMetadata } from '@nestjs/common';
+/*import { SetMetadata } from '@nestjs/common';
 
 export const ROLES_KEY = 'roles';
 export const Roles = (...roles: Role[]) =>SetMetadata(ROLES_KEY, roles);
@@ -12,4 +12,10 @@ export enum Role {
     Payroll_Specialist = 'Payroll_Specialist',
     Payroll_Manager = 'Payroll_Manager',
     Finance_Staff = 'Finance_Staff',
-  }
+  }*/
+
+  import { SetMetadata } from '@nestjs/common';
+import { SystemRole } from '../enums/employee-profile.enums';
+
+export const ROLES_KEY = 'roles';
+export const Roles = (...roles: SystemRole[]) => SetMetadata(ROLES_KEY, roles);
