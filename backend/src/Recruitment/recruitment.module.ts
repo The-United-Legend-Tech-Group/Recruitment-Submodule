@@ -1,9 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { JwtModule } from '@nestjs/jwt';
 import { RecruitmentController } from './recruitment.controller';
 import { RecruitmentService } from './recruitment.service';
 import { OffboardingController } from './offboarding.controller';
 import { OffboardingService } from './offboarding.service';
+import { AuthGuard } from '../common/guards/authentication.guard';
+import { authorizationGuard } from '../common/guards/authorization.guard';
 
 // Recruitment schemas
 import { JobTemplate, JobTemplateSchema } from './models/job-template.schema';
@@ -50,7 +53,8 @@ import {
   OnboardingRepository,
   TerminationRequestRepository,
   ClearanceChecklistRepository,
-  EmployeeTerminationResignationRepository
+  EmployeeTerminationResignationRepository,
+  AssessmentResultRepository
 } from './repositories';
 
 // Module imports
@@ -59,6 +63,7 @@ import { NotificationModule } from '../employee-subsystem/notification/notificat
 import { LeavesModule } from '../leaves/leaves.module';
 import { PerformanceModule } from '../employee-subsystem/performance/performance.module';
 import { OrganizationStructureModule } from '../employee-subsystem/organization-structure/organization-structure.module';
+import { PayrollModule } from '../payroll/payroll.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -100,6 +105,11 @@ import { OrganizationStructureModule } from '../employee-subsystem/organization-
     PerformanceModule,
     OrganizationStructureModule,
     LeavesModule,
+    PayrollModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'default-secret-key',
+      signOptions: { expiresIn: '24h' },
+    }),
   ],
   controllers: [
     RecruitmentController,
@@ -122,6 +132,10 @@ import { OrganizationStructureModule } from '../employee-subsystem/organization-
     TerminationRequestRepository,
     ClearanceChecklistRepository,
     EmployeeTerminationResignationRepository,
+    AssessmentResultRepository,
+    // Guards
+    AuthGuard,
+    authorizationGuard,
   ],
   exports: [
     RecruitmentService,

@@ -21,7 +21,11 @@ export class ContractRepository extends BaseRepository<ContractDocument> impleme
     return this.contractModel.find({ employeeSigned: signed }).exec();
   }
 
-  async findByCandidateId(candidateId: string): Promise<ContractDocument[]> {
-    return this.contractModel.find({ candidateId: new Types.ObjectId(candidateId) }).exec();
+  async findByOfferIds(offerIds: Types.ObjectId[]): Promise<ContractDocument[]> {
+    return this.contractModel.find({ offerId: { $in: offerIds } }).exec();
+  }
+
+  async findAllWithOffer(): Promise<ContractDocument[]> {
+    return this.contractModel.find().populate('offerId').exec();
   }
 }

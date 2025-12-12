@@ -11,10 +11,11 @@ import { DepartmentClearanceSignOffDto } from './offboardingDtos/department-clea
 import { ApproveTerminationDto } from './offboardingDtos/approve-termination.dto';
 import { TerminationRequest } from './models/termination-request.schema';
 import { ClearanceChecklist } from './models/clearance-checklist.schema';
-import { Notification } from '../employee-subsystem/notification/models/notification.schema';
+//import { Notification } from '../employee-subsystem/notification/models/notification.schema';
 
 @ApiTags('Offboarding')
 @Controller('offboarding')
+// @UseGuards(AuthGuard, authorizationGuard)
 export class OffboardingController {
   constructor(private readonly offboardingService: OffboardingService) { }
 
@@ -25,6 +26,7 @@ export class OffboardingController {
   @ApiNotFoundResponse({ description: 'Employee or contract not found' })
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  // @Roles(SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.DEPARTMENT_HEAD)
   async initiateTerminationReview(@Body() dto: InitiateTerminationReviewDto): Promise<TerminationRequest> {
     return this.offboardingService.initiateTerminationReview(dto);
   }
@@ -36,21 +38,22 @@ export class OffboardingController {
   @ApiNotFoundResponse({ description: 'Termination request not found' })
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  // @Roles(SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE)
   async initiateOffboardingChecklist(@Body() dto: InitiateOffboardingChecklistDto): Promise<ClearanceChecklist> {
     return this.offboardingService.initiateOffboardingChecklist(dto);
   }
 
-  @Post('send-notification')
-  @ApiOperation({ summary: 'Send offboarding notification for benefits and final pay calculation' })
-  @ApiCreatedResponse({ description: 'Offboarding notification sent successfully', type: Notification })
-  @ApiBadRequestResponse({ description: 'Invalid termination request ID' })
-  @ApiNotFoundResponse({ description: 'Termination request or employee not found' })
-  @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
-  /* async sendOffboardingNotification(@Body() dto: SendOffboardingNotificationDto): Promise<Notification> {
-     return this.offboardingService.sendOffboardingNotification(dto);
-   }
- */
+  // @Post('send-notification')
+  // @ApiOperation({ summary: 'Send offboarding notification for benefits and final pay calculation' })
+  // @ApiCreatedResponse({ description: 'Offboarding notification sent successfully', type: Notification })
+  // @ApiBadRequestResponse({ description: 'Invalid termination request ID' })
+  // @ApiNotFoundResponse({ description: 'Termination request or employee not found' })
+  // @HttpCode(HttpStatus.CREATED)
+  // @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  //  async sendOffboardingNotification(@Body() dto: SendOffboardingNotificationDto): Promise<Notification> {
+  //    return this.offboardingService.sendOffboardingNotification(dto);
+  //  }
+ 
   @Post('submit-resignation')
   @ApiOperation({ summary: 'Employee submits resignation request' })
   @ApiCreatedResponse({ description: 'Resignation submitted successfully', type: TerminationRequest })
@@ -58,6 +61,7 @@ export class OffboardingController {
   @ApiNotFoundResponse({ description: 'Employee or contract not found' })
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  // @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD, SystemRole.HR_EMPLOYEE, SystemRole.HR_MANAGER)
   async submitResignation(@Body() dto: SubmitResignationDto): Promise<TerminationRequest> {
     return this.offboardingService.submitResignation(dto);
   }
@@ -71,8 +75,27 @@ export class OffboardingController {
   @ApiNotFoundResponse({ description: 'Employee not found' })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  // @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD, SystemRole.HR_EMPLOYEE, SystemRole.HR_MANAGER, SystemRole.HR_ADMIN)
   async trackResignationStatus(@Query() dto: TrackResignationStatusDto): Promise<TerminationRequest[]> {
     return this.offboardingService.trackResignationStatus(dto);
+  }
+
+  @Get('checklists/all')
+  @ApiOperation({ summary: 'Get all offboarding checklists for HR Manager' })
+  @ApiOkResponse({ description: 'Offboarding checklists retrieved successfully' })
+  @HttpCode(HttpStatus.OK)
+  // @Roles(SystemRole.HR_MANAGER, SystemRole.HR_ADMIN)
+  async getAllOffboardingChecklists() {
+    return this.offboardingService.getAllOffboardingChecklists();
+  }
+
+  @Get('termination-requests/all')
+  @ApiOperation({ summary: 'Get all termination requests for HR Manager' })
+  @ApiOkResponse({ description: 'Termination requests retrieved successfully', type: [TerminationRequest] })
+  @HttpCode(HttpStatus.OK)
+  // @Roles(SystemRole.HR_MANAGER, SystemRole.HR_ADMIN)
+  async getAllTerminationRequests(): Promise<TerminationRequest[]> {
+    return this.offboardingService.getAllTerminationRequests();
   }
 
   @Post('revoke-access')
@@ -101,6 +124,7 @@ export class OffboardingController {
   @ApiNotFoundResponse({ description: 'Clearance checklist or department not found' })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  // @Roles(SystemRole.DEPARTMENT_HEAD, SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.SYSTEM_ADMIN, SystemRole.FINANCE_STAFF)
   async processDepartmentSignOff(@Body() dto: DepartmentClearanceSignOffDto): Promise<{
     message: string;
     clearanceChecklistId: string;
@@ -127,6 +151,7 @@ export class OffboardingController {
   @ApiNotFoundResponse({ description: 'Termination request not found' })
   @HttpCode(HttpStatus.OK)
   @UsePipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true }))
+  // @Roles(SystemRole.HR_MANAGER, SystemRole.HR_ADMIN)
   async approveTermination(@Body() dto: ApproveTerminationDto): Promise<TerminationRequest> {
     return this.offboardingService.approveTermination(dto);
   }
