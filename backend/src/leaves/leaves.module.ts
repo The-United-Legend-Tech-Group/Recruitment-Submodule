@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from '../database/database.module';
 import { Attachment, AttachmentSchema } from './models/attachment.schema';
@@ -32,10 +32,26 @@ import { LeavesReportService } from './reports/leave-reports.service';
 import { EmployeeModule } from '../employee-subsystem/employee/employee.module';
 import { NotificationModule } from '../employee-subsystem/notification/notification.module';
 import { OrganizationStructureModule } from '../employee-subsystem/organization-structure/organization-structure.module';
+import { TimeMangementModule } from '../time-mangement/timemangment.module';
+import {
+  LeavePolicyRepository,
+  LeaveEntitlementRepository,
+  LeaveTypeRepository,
+  LeaveAdjustmentRepository,
+  LeaveRequestRepository,
+  CalendarRepository,
+  AttachmentRepository,
+} from './repository';
+
+import { ConfigModule } from '@nestjs/config';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { EmployeeSystemRole, EmployeeSystemRoleSchema } from '../employee-subsystem/employee/models/employee-system-role.schema';
 
 @Module({
   imports: [
     DatabaseModule,
+    forwardRef(() => TimeMangementModule), // Use forwardRef to resolve circular dependency
     // ScheduleModule.forRoot() moved to AppModule
     MongooseModule.forFeature([
       { name: Attachment.name, schema: AttachmentSchema },
@@ -46,7 +62,17 @@ import { OrganizationStructureModule } from '../employee-subsystem/organization-
       { name: LeaveRequest.name, schema: LeaveRequestSchema },
       { name: LeaveType.name, schema: LeaveTypeSchema },
       { name: LeaveCategory.name, schema: LeaveCategorySchema },
+      { name: EmployeeSystemRole.name, schema: EmployeeSystemRoleSchema },
     ]),
+    ConfigModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '1d' },
+      }),
+      inject: [ConfigService],
+    }),
     EmployeeModule,
     NotificationModule,
     OrganizationStructureModule,
@@ -56,7 +82,18 @@ import { OrganizationStructureModule } from '../employee-subsystem/organization-
     LeavesRequestController,
     LeavesReportController,
   ],
-  providers: [LeavesPolicyService, LeavesRequestService, LeavesReportService],
+  providers: [
+    LeavesPolicyService,
+    LeavesRequestService,
+    LeavesReportService,
+    LeavePolicyRepository,
+    LeaveEntitlementRepository,
+    LeaveTypeRepository,
+    LeaveAdjustmentRepository,
+    LeaveRequestRepository,
+    AttachmentRepository,
+    CalendarRepository,
+  ],
   exports: [MongooseModule],
 })
-export class LeavesModule {}
+export class LeavesModule { }

@@ -20,9 +20,9 @@ import { CreateAttendanceCorrectionDto } from './dto/create-attendance-correctio
 import { ApproveAttendanceCorrectionDto } from './dto/approve-attendance-correction.dto';
 import { SubmitCorrectionEssDto } from './dto/submit-correction-ess.dto';
 import { ApproveRejectCorrectionDto } from './dto/approve-reject-correction.dto';
-import { ShiftService } from './shift.service';
-import { ShiftAssignmentService } from './shift-assignment.service';
-import { AttendanceService } from './attendance.service';
+import { ShiftService } from './services/shift.service';
+import { ShiftAssignmentService } from './services/shift-assignment.service';
+import { AttendanceService } from './services/attendance.service';
 
 @ApiTags('time')
 @Controller('time')
@@ -152,6 +152,69 @@ export class TimeController {
     return this.attendanceService.punch(dto as any);
   }
 
+  @Get('attendance/records/:employeeId')
+  @ApiOperation({
+    summary:
+      'Get attendance records for an employee with pagination and filters',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    description: 'Start date for filter (ISO string)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    description: 'End date for filter (ISO string)',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-based)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Items per page (default: 20, max: 100)',
+  })
+  @ApiQuery({
+    name: 'hasMissedPunch',
+    required: false,
+    description: 'Filter by missed punch status',
+  })
+  @ApiQuery({
+    name: 'finalisedForPayroll',
+    required: false,
+    description: 'Filter by payroll finalised status',
+  })
+  getAttendanceRecords(
+    @Param('employeeId') employeeId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('hasMissedPunch') hasMissedPunch?: string,
+    @Query('finalisedForPayroll') finalisedForPayroll?: string,
+  ) {
+    return this.attendanceService.getAttendanceRecords(
+      employeeId,
+      startDate ? new Date(startDate) : undefined,
+      endDate ? new Date(endDate) : undefined,
+      page ? parseInt(page, 10) : undefined,
+      limit ? parseInt(limit, 10) : undefined,
+      hasMissedPunch === 'true'
+        ? true
+        : hasMissedPunch === 'false'
+          ? false
+          : undefined,
+      finalisedForPayroll === 'true'
+        ? true
+        : finalisedForPayroll === 'false'
+          ? false
+          : undefined,
+    );
+  }
+
   @Post('attendance/corrections')
   @ApiOperation({ summary: 'Submit an attendance correction request' })
   submitCorrection(@Body() dto: CreateAttendanceCorrectionDto) {
@@ -170,7 +233,9 @@ export class TimeController {
   @ApiOperation({
     summary: 'Get pending corrections for a line manager to review',
   })
-  getPendingCorrectionsForManager(@Param('lineManagerId') lineManagerId: string) {
+  getPendingCorrectionsForManager(
+    @Param('lineManagerId') lineManagerId: string,
+  ) {
     return this.attendanceService.getPendingCorrectionsForManager(
       lineManagerId,
     );

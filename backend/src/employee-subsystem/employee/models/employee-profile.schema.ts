@@ -20,7 +20,7 @@ export class EmployeeProfile extends UserProfileBase {
   @Prop({ type: Date, required: true })
   dateOfHire: Date;
 
-  @Prop({ type: String, unique: true })
+  @Prop({ type: String, unique: true, sparse: true })
   workEmail?: string;
 
   @Prop({ type: String })
@@ -32,7 +32,13 @@ export class EmployeeProfile extends UserProfileBase {
   @Prop({ type: Date })
   contractEndDate?: Date;
 
-  
+    // Banking details
+  @Prop({ type: String })
+  bankName?: string;
+
+  @Prop({ type: String })
+  bankAccountNumber?: string;
+
   @Prop({
     type: String,
     enum: Object.values(ContractType),

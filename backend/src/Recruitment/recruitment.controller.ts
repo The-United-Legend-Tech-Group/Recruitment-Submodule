@@ -211,12 +211,13 @@ export class RecruitmentController {
   @ApiResponse({ status: 200, description: 'Application updated successfully and history recorded. Notifications sent to candidate and HR.' })
   @ApiResponse({ status: 404, description: 'Application or job requisition not found' })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @Patch('Application/:applicationId')
+  @Patch('Application/:applicationId/update/:hrId')
   async updateApplication(
     @Param('applicationId') applicationId: string,
-    @Body() updateApplicationDto: UpdateApplicationDto
+    @Param('hrId') hrId: string,
+    @Body() updateApplicationDto: UpdateApplicationDto,
   ): Promise<ApplicationDocument> {
-    return this.recruitmentService.updateApplication(applicationId, updateApplicationDto);
+    return this.recruitmentService.updateApplication(applicationId, updateApplicationDto, hrId);
   }
 
   @ApiOperation({ summary: 'Send manual notification for application change' })

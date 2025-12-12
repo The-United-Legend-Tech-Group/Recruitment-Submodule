@@ -25,7 +25,7 @@ import { AppraisalRecord, AppraisalRecordSchema } from '../employee-subsystem/pe
 import { EmployeeProfile, EmployeeProfileSchema } from '../employee-subsystem/employee/models/employee-profile.schema';
 import { EmployeeSystemRole, EmployeeSystemRoleSchema } from '../employee-subsystem/employee/models/employee-system-role.schema';
 import { Candidate, CandidateSchema } from '../employee-subsystem/employee/models/candidate.schema';
-import { Notification, NotificationSchema } from '..//../src/employee-subsystem/notification/models/notification.schema';
+import { Notification, NotificationSchema } from '../employee-subsystem/notification/models/notification.schema';
 
 // Leaves schemas
 import { LeaveEntitlement, LeaveEntitlementSchema } from '../leaves/models/leave-entitlement.schema';
@@ -36,10 +36,29 @@ import { EmployeeTerminationResignation, EmployeeTerminationResignationSchema } 
 import { signingBonus, signingBonusSchema } from '../payroll/config_setup/models/signingBonus.schema';
 import { payGrade, payGradeSchema } from '../payroll/config_setup/models/payGrades.schema';
 
+// Repository implementations
+import {
+  JobTemplateRepository,
+  JobRequisitionRepository,
+  ApplicationRepository,
+  InterviewRepository,
+  DocumentRepository,
+  ReferralRepository,
+  ApplicationHistoryRepository,
+  OfferRepository,
+  ContractRepository,
+  OnboardingRepository,
+  TerminationRequestRepository,
+  ClearanceChecklistRepository,
+  EmployeeTerminationResignationRepository
+} from './repositories';
+
 // Module imports
 import { EmployeeModule } from '../employee-subsystem/employee/employee.module';
 import { NotificationModule } from '../employee-subsystem/notification/notification.module';
 import { LeavesModule } from '../leaves/leaves.module';
+import { PerformanceModule } from '../employee-subsystem/performance/performance.module';
+import { OrganizationStructureModule } from '../employee-subsystem/organization-structure/organization-structure.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -57,27 +76,29 @@ import { LeavesModule } from '../leaves/leaves.module';
       { name: TerminationRequest.name, schema: TerminationRequestSchema },
       { name: ClearanceChecklist.name, schema: ClearanceChecklistSchema },
       { name: Onboarding.name, schema: OnboardingSchema },
-      
+
       // Employee subsystem schemas
       { name: AppraisalRecord.name, schema: AppraisalRecordSchema },
       { name: EmployeeProfile.name, schema: EmployeeProfileSchema },
       { name: EmployeeSystemRole.name, schema: EmployeeSystemRoleSchema },
       { name: Candidate.name, schema: CandidateSchema },
       { name: Notification.name, schema: NotificationSchema },
-      
+
       // Leaves schemas
       { name: LeaveEntitlement.name, schema: LeaveEntitlementSchema },
       { name: LeaveType.name, schema: LeaveTypeSchema },
-      
+
       // Payroll schemas
       { name: EmployeeTerminationResignation.name, schema: EmployeeTerminationResignationSchema },
       { name: signingBonus.name, schema: signingBonusSchema },
       { name: payGrade.name, schema: payGradeSchema },
     ]),
-    
+
     // Module imports
     EmployeeModule,
     NotificationModule,
+    PerformanceModule,
+    OrganizationStructureModule,
     LeavesModule,
   ],
   controllers: [
@@ -87,10 +108,24 @@ import { LeavesModule } from '../leaves/leaves.module';
   providers: [
     RecruitmentService,
     OffboardingService,
+    // Repository implementations
+    JobTemplateRepository,
+    JobRequisitionRepository,
+    ApplicationRepository,
+    InterviewRepository,
+    DocumentRepository,
+    ReferralRepository,
+    ApplicationHistoryRepository,
+    OfferRepository,
+    ContractRepository,
+    OnboardingRepository,
+    TerminationRequestRepository,
+    ClearanceChecklistRepository,
+    EmployeeTerminationResignationRepository,
   ],
   exports: [
     RecruitmentService,
     OffboardingService,
   ],
 })
-export class RecruitmentModule {}
+export class RecruitmentModule { }

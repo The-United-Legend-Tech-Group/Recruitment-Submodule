@@ -3,9 +3,16 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { AppConfigService } from './config/app-config.service';
+import cookieParser from 'cookie-parser';
+
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  // Increase payload limit
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+
   const configService = app.get<AppConfigService>(AppConfigService);
 
   // Global validation pipe for DTO validation
@@ -13,7 +20,11 @@ async function bootstrap() {
   // Allow cross-origin requests from the browser (Swagger UI uses fetch())
   // Enabling CORS here ensures the Swagger UI and other browser clients
   // can successfully call endpoints during local testing.
-  app.enableCors();
+  app.use(cookieParser());
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+    credentials: true,
+  });
 
   // Global validation pipe for DTO validation (useful for Swagger testing)
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));

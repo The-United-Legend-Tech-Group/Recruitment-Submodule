@@ -2,130 +2,116 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
-import {
-  LeaveRequest,
-  LeaveRequestDocument,
-} from '../models/leave-request.schema';
-import { LeaveType, LeaveTypeDocument } from '../models/leave-type.schema';
-import { Attachment, AttachmentDocument } from '../models/attachment.schema';
-import {
-  LeaveEntitlement,
-  LeaveEntitlementDocument,
-} from '../models/leave-entitlement.schema';
+import { Types } from 'mongoose';
+import { LeaveRequest } from '../models/leave-request.schema';
+import { Attachment } from '../models/attachment.schema';
 import { CreateLeaveRequestDto } from '../dtos/create-leave-request.dto';
 import { UploadAttachmentDto } from '../dtos/upload-attachment.dto';
 import { UpdateLeaveRequestDto } from '../dtos/update-leave-request.dto';
 import { ManagerApprovalDto } from '../dtos/manager-approve.dto';
-import { LeaveStatus } from '../enums/leave-status.enum';
+import { NotificationService } from '../../employee-subsystem/notification/notification.service';
 import { EmployeeService } from '../../employee-subsystem/employee/employee.service';
+import { LeaveStatus } from '../enums/leave-status.enum';
+import {
+  LeaveRequestRepository,
+  LeaveTypeRepository,
+  AttachmentRepository,
+  LeaveEntitlementRepository,
+} from '../repository';
+import { AuthGuard } from '../../common/guards/authentication.guard';
+import { authorizationGuard } from '../../common/guards/authorization.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { SystemRole } from '../../employee-subsystem/employee/enums/employee-profile.enums';
 
 @Injectable()
 export class LeavesRequestService {
   constructor(
+    private readonly leaveRequestRepository: LeaveRequestRepository,
+    private readonly leaveTypeRepository: LeaveTypeRepository,
+    private readonly attachmentRepository: AttachmentRepository,
+    private readonly leaveEntitlementRepository: LeaveEntitlementRepository,
+    private readonly notificationService: NotificationService,
     private readonly employeeService: EmployeeService,
-    @InjectModel(LeaveRequest.name)
-    private leaveRequestModel: Model<LeaveRequestDocument>,
-    @InjectModel(LeaveType.name)
-    private leaveTypeModel: Model<LeaveTypeDocument>,
-    @InjectModel(Attachment.name)
-    private attachmentModel: Model<AttachmentDocument>,
-    @InjectModel(LeaveEntitlement.name)
-    private leaveEntitlementModel: Model<LeaveEntitlementDocument>,
   ) {}
 
   // ---------- REQ-015: Submit Leave Request ----------
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_EMPLOYEE)
   async submitLeaveRequest(dto: CreateLeaveRequestDto): Promise<LeaveRequest> {
-    // Validate employee (use EmployeeService.getProfile which returns a combined view)
-    const employeeView = await this.employeeService.getProfile(dto.employeeId);
-    const employee = employeeView?.profile;
-    if (!employee) throw new NotFoundException('Employee not found');
-
-    // Optional: check eligibility for leave type
-    const leaveType = await this.leaveTypeModel.findById(dto.leaveTypeId);
+    // Validate leave type
+    const leaveType = await this.leaveTypeRepository.findById(dto.leaveTypeId);
     if (!leaveType) throw new NotFoundException('Leave type not found');
-
-    if (leaveType.minTenureMonths) {
-      const tenureMonths = Math.floor(
-        (Date.now() - new Date(employee.dateOfHire).getTime()) /
-          (1000 * 60 * 60 * 24 * 30),
-      );
-      if (tenureMonths < leaveType.minTenureMonths) {
-        throw new BadRequestException(
-          'Employee does not meet minimum tenure for this leave',
-        );
-      }
-    }
 
     let attachmentId: Types.ObjectId | undefined;
 
     if (dto.filePath && dto.originalFileName) {
-      const attachment = new this.attachmentModel({
+      const attachment = await this.attachmentRepository.create({
         originalName: dto.originalFileName,
         filePath: dto.filePath,
         fileType: dto.fileType,
         size: dto.size,
       });
-      const savedAttachment = await attachment.save();
-      attachmentId = savedAttachment._id;
+      attachmentId = attachment._id;
     }
 
-    const leaveRequest = new this.leaveRequestModel({
-      employeeId: dto.employeeId,
-      leaveTypeId: dto.leaveTypeId,
+    return await this.leaveRequestRepository.create({
+      employeeId: new Types.ObjectId(dto.employeeId),
+      leaveTypeId: new Types.ObjectId(dto.leaveTypeId),
       dates: dto.dates,
       durationDays: dto.durationDays,
       justification: dto.justification,
       ...(attachmentId && { attachmentId }),
     });
-
-    return leaveRequest.save();
   }
 
   // ---------- REQ-016: Upload Supporting Document ----------
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD)
   async uploadAttachment(dto: UploadAttachmentDto): Promise<Attachment> {
-    const attachment = new this.attachmentModel({
+    return await this.attachmentRepository.create({
       originalName: dto.originalName,
       filePath: dto.filePath,
       fileType: dto.fileType,
       size: dto.size,
     });
-    return attachment.save();
   }
 
   // Optional: Attach existing uploaded document to a leave request
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD)
   async attachToLeaveRequest(
     leaveRequestId: string,
     attachmentId: string,
-  ): Promise<LeaveRequest> {
-    const request = await this.leaveRequestModel.findById(leaveRequestId);
-    if (!request) throw new NotFoundException('Leave request not found');
-
-    request.attachmentId = new Types.ObjectId(attachmentId);
-    return request.save();
+  ): Promise<LeaveRequest | null> {
+    return await this.leaveRequestRepository.updateById(leaveRequestId, {
+      attachmentId: new Types.ObjectId(attachmentId),
+    });
   }
 
   // ---------- REQ-017: Update Pending Leave Requests ----------
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD)
   async modifyPendingRequest(
     id: string,
     dto: UpdateLeaveRequestDto,
-  ): Promise<LeaveRequest> {
-    const request = await this.leaveRequestModel.findById(id);
+  ): Promise<LeaveRequest | null> {
+    const request = await this.leaveRequestRepository.findById(id);
     if (!request) throw new NotFoundException('Leave request not found');
 
     if (request.status !== LeaveStatus.PENDING) {
       throw new BadRequestException('Only pending requests can be modified');
     }
 
-    Object.assign(request, dto);
-    return request.save();
+    return await this.leaveRequestRepository.updateById(id, dto);
   }
 
   // ---------- REQ-018: Cancel Pending Leave Requests ----------
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD)
   async cancelPendingRequest(leaveRequestId: string): Promise<LeaveRequest> {
-    const request = await this.leaveRequestModel.findById(leaveRequestId);
+    const request = await this.leaveRequestRepository.findById(leaveRequestId);
 
     if (!request) {
       throw new Error('Leave request not found');
@@ -138,82 +124,123 @@ export class LeavesRequestService {
     request.status = LeaveStatus.CANCELLED;
     return request.save();
   }
+
+  // REQ-019: As an employee, receive notifications when my leave request is approved, rejected
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_EMPLOYEE, SystemRole.DEPARTMENT_HEAD)
+  async notifyEmployee(status: LeaveStatus, r: string) {
+    const request = await this.leaveRequestRepository.findById(r);
+    if(!request) throw new NotFoundException("No Request Found");
+    
+    // status: 'approved' | 'rejected' | ..
+    // status: 'approved' | 'rejected' | ...
+    const type = status === LeaveStatus.APPROVED ? 'Success' : status === LeaveStatus.REJECTED ? 'Warning' : 'Info';
+    const title = status === LeaveStatus.APPROVED ? 'Leave Request Approved' : status === LeaveStatus.REJECTED ? 'Leave Request Rejected' : 'Leave Request Update';
+    const message = status === LeaveStatus.APPROVED
+      ? `Your leave request for ${request.durationDays} day(s), submitted on ${request.dates?.from?.toLocaleDateString?.() || ''}, has been approved.`
+      : status === LeaveStatus.REJECTED
+        ? `Your leave request for ${request.durationDays} day(s), submitted on ${request.dates?.from?.toLocaleDateString?.() || ''}, has been rejected.`
+        : `Your leave request status is now ${status}`;
+    return this.notificationService.create({
+      recipientId: [request.employeeId.toString()],
+      type,
+      deliveryType: 'UNICAST',
+      title,
+      message,
+      relatedEntityId: request?.leaveTypeId.toString?.(),
+      relatedModule: 'Leaves',
+    });
+  }
+
   // =============================
   // REQ-020: Manager Review Request
   // =============================
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_HEAD)
   async getLeaveRequestsForManager(managerId: string): Promise<LeaveRequest[]> {
-    // Find team members for this manager and return pending requests for them.
-    if (!managerId) return [];
-
+    
     const team = await this.employeeService.getTeamProfiles(managerId);
-    const members = Array.isArray(team?.items) ? team.items : [];
-    if (members.length === 0) return [];
+    if(!team) throw new NotFoundException("No teams for this Manager");
 
-    const employeeIds = members
-      .map((m: any) => m._id || m.employeeProfileId || m.id)
-      .filter(Boolean);
-    if (employeeIds.length === 0) return [];
+    const employeeIds = team.items.map(member => member._id);
+    const leaveRequests = await this.leaveRequestRepository.find({
+      employeeId: { $in: employeeIds },
+    });
+    return leaveRequests;
 
-    return this.leaveRequestModel
-      .find({
-        employeeId: { $in: employeeIds },
-        'approvalFlow.role': 'manager',
-        'approvalFlow.status': LeaveStatus.PENDING,
-      })
-      .exec();
+
   }
 
   // ---------- REQ-021: Manager Approves a request ----------
-  async approveRequest(leaveRequestId: string, dto: ManagerApprovalDto) {
-    const updated = await this.leaveRequestModel.findByIdAndUpdate(
-      leaveRequestId,
-      {
-        status: LeaveStatus.APPROVED,
-        $push: {
-          approvalFlow: {
-            role: 'department head',
-            status: LeaveStatus.APPROVED,
-            decidedBy: dto.decidedBy,
-            decidedAt: new Date(),
-          },
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_HEAD)
+  async approveRequest(leaveRequestId: string, dto: ManagerApprovalDto): Promise<LeaveRequest | null> {
+    return await this.leaveRequestRepository.updateWithApprovalFlow(leaveRequestId, {
+      status: LeaveStatus.APPROVED,
+      $push: {
+        approvalFlow: {
+          role: 'department head',
+          status: LeaveStatus.APPROVED,
+          decidedBy: new Types.ObjectId(dto.decidedBy),
+          decidedAt: new Date(),
         },
       },
-      { new: true },
-    );
-
-    return updated;
+    });
   }
 
   // ---------- REQ-022: Manager Rejects a request ----------
-  async rejectRequest(leaveRequestId: string, dto: ManagerApprovalDto) {
-    const updated = await this.leaveRequestModel.findByIdAndUpdate(
-      leaveRequestId,
-      {
-        status: LeaveStatus.REJECTED,
-        $push: {
-          approvalFlow: {
-            role: 'department head',
-            status: LeaveStatus.REJECTED,
-            decidedBy: dto.decidedBy,
-            decidedAt: new Date(),
-          },
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_HEAD)
+  async rejectRequest(leaveRequestId: string, dto: ManagerApprovalDto): Promise<LeaveRequest | null> {
+    return await this.leaveRequestRepository.updateWithApprovalFlow(leaveRequestId, {
+      status: LeaveStatus.REJECTED,
+      $push: {
+        approvalFlow: {
+          role: 'department head',
+          status: LeaveStatus.REJECTED,
+          decidedBy: new Types.ObjectId(dto.decidedBy),
+          decidedAt: new Date(),
         },
-        justification: dto.justification,
       },
-      { new: true },
-    );
-    return updated;
+      justification: dto.justification,
+    });
   }
 
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.DEPARTMENT_HEAD)
+  async notifyManager(status: LeaveStatus, r: string) {
+    const request = await this.leaveRequestRepository.findById(r);
+    if(!request) throw new NotFoundException("No Request Found");
+    
+    // status: 'approved' | 'rejected' | ...
+    const type = status === LeaveStatus.APPROVED ? 'Success' : status === LeaveStatus.REJECTED ? 'Warning' : 'Info';
+    const title = status === LeaveStatus.APPROVED ? 'Leave Request Approved' : status === LeaveStatus.REJECTED ? 'Leave Request Rejected' : 'Leave Request Update';
+    const message = status === LeaveStatus.APPROVED
+      ? `Your leave request for ${request.durationDays} day(s), submitted on ${request.dates?.from?.toLocaleDateString?.() || ''}, has been approved.`
+      : status === LeaveStatus.REJECTED
+        ? `Your leave request for ${request.durationDays} day(s), submitted on ${request.dates?.from?.toLocaleDateString?.() || ''}, has been rejected.`
+        : `Your leave request status is now ${status}`;
+    return this.notificationService.create({
+      recipientId: [request.employeeId.toString()],
+      type,
+      deliveryType: 'UNICAST',
+      title,
+      message,
+      relatedEntityId: request?.leaveTypeId.toString?.(),
+      relatedModule: 'Leaves',
+    });
+  }
   // =============================
   // REQ-025: HR Finalization
   // =============================
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.HR_MANAGER)
   async finalizeLeaveRequest(
     leaveRequestId: string,
     hrUserId: string,
     finalStatus: LeaveStatus,
-  ): Promise<LeaveRequest> {
-    const request = await this.leaveRequestModel.findById(leaveRequestId);
+  ): Promise<LeaveRequest | null> {
+    const request = await this.leaveRequestRepository.findById(leaveRequestId);
     if (!request) throw new NotFoundException('Leave request not found');
 
     if (request.status !== LeaveStatus.APPROVED) {
@@ -222,64 +249,52 @@ export class LeavesRequestService {
       );
     }
 
-    const updatedRequest = await this.leaveRequestModel.findByIdAndUpdate(
-      leaveRequestId,
-      {
-        status: finalStatus, // This can be APPROVED or REJECTED
-        $push: {
-          approvalFlow: {
-            role: 'hr',
-            status: finalStatus,
-            decidedBy: new Types.ObjectId(hrUserId),
-            decidedAt: new Date(),
-          },
+    return await this.leaveRequestRepository.updateWithApprovalFlow(leaveRequestId, {
+      status: finalStatus, // This can be APPROVED or REJECTED
+      $push: {
+        approvalFlow: {
+          role: 'hr',
+          status: finalStatus,
+          decidedBy: new Types.ObjectId(hrUserId),
+          decidedAt: new Date(),
         },
       },
-      { new: true },
-    );
-
-    if (!updatedRequest)
-      throw new NotFoundException('Leave request not found after finalization');
-    return updatedRequest;
+    });
   }
 
   // =============================
   // REQ-026: HR Override
   // =============================
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.HR_MANAGER)
   async hrOverrideRequest(
     leaveRequestId: string,
     hrUserId: string,
     newStatus: LeaveStatus,
     reason: string,
-  ): Promise<LeaveRequest> {
-    const request = await this.leaveRequestModel.findById(leaveRequestId);
+  ): Promise<LeaveRequest | null> {
+    const request = await this.leaveRequestRepository.findById(leaveRequestId);
     if (!request) throw new NotFoundException('Leave request not found');
 
-    const updatedRequest = await this.leaveRequestModel.findByIdAndUpdate(
-      leaveRequestId,
-      {
-        status: newStatus, // Override the current status
-        $push: {
-          approvalFlow: {
-            role: 'hr',
-            status: newStatus,
-            decidedBy: new Types.ObjectId(hrUserId),
-            decidedAt: new Date(),
-          },
+    return await this.leaveRequestRepository.updateWithApprovalFlow(leaveRequestId, {
+      status: newStatus, // Override the current status
+      $push: {
+        approvalFlow: {
+          role: 'hr',
+          status: newStatus,
+          decidedBy: new Types.ObjectId(hrUserId),
+          decidedAt: new Date(),
         },
-        justification: `HR OVERRIDE: ${reason}`,
       },
-      { new: true },
-    );
-
-    if (!updatedRequest)
-      throw new NotFoundException('Leave request not found after override');
-    return updatedRequest;
+      justification: `HR OVERRIDE: ${reason}`,
+    });
   }
 
   // =============================
   // REQ-027: Bulk Processing
   // =============================
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.HR_MANAGER)
   async bulkProcessRequests(
     leaveRequestIds: string[],
     action: string,
@@ -290,7 +305,7 @@ export class LeavesRequestService {
 
     for (const requestId of leaveRequestIds) {
       try {
-        const request = await this.leaveRequestModel.findById(requestId);
+        const request = await this.leaveRequestRepository.findById(requestId);
         if (!request) {
           failed++;
           continue;
@@ -307,7 +322,7 @@ export class LeavesRequestService {
           continue;
         }
 
-        await this.leaveRequestModel.findByIdAndUpdate(requestId, {
+        await this.leaveRequestRepository.updateWithApprovalFlow(requestId, {
           status: newStatus,
           $push: {
             approvalFlow: {
@@ -331,13 +346,15 @@ export class LeavesRequestService {
   // =============================
   // REQ-028: Verify Medical Documents
   // =============================
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.HR_MANAGER)
   async verifyMedicalDocuments(
     leaveRequestId: string,
     hrUserId: string,
     verified: boolean,
     notes?: string,
-  ): Promise<LeaveRequest> {
-    const request = await this.leaveRequestModel.findById(leaveRequestId);
+  ): Promise<LeaveRequest | null> {
+    const request = await this.leaveRequestRepository.findById(leaveRequestId);
     if (!request) throw new NotFoundException('Leave request not found');
 
     if (!request.attachmentId) {
@@ -361,37 +378,26 @@ export class LeavesRequestService {
       updateData.justification = `Medical Doc Verification: ${notes}`;
     }
 
-    const updatedRequest = await this.leaveRequestModel.findByIdAndUpdate(
-      leaveRequestId,
-      updateData,
-      { new: true },
-    );
-
-    if (!updatedRequest)
-      throw new NotFoundException('Leave request not found after update');
-    return updatedRequest;
+    return await this.leaveRequestRepository.updateWithApprovalFlow(leaveRequestId, updateData);
   }
 
   // =============================
   // REQ-029: Auto Update Balance After Approval
   // =============================
+  @UseGuards(AuthGuard, authorizationGuard)
+  @Roles(SystemRole.HR_MANAGER, SystemRole.SYSTEM_ADMIN)
   async autoUpdateBalancesForApprovedRequests(): Promise<{ updated: number }> {
-    const approvedRequests = await this.leaveRequestModel.find({
+    const approvedRequests = await this.leaveRequestRepository.find({
       status: LeaveStatus.APPROVED,
     });
 
     let updated = 0;
 
     for (const request of approvedRequests) {
-      await this.leaveEntitlementModel.findOneAndUpdate(
-        { employeeId: request.employeeId, leaveTypeId: request.leaveTypeId },
-        {
-          $inc: {
-            taken: request.durationDays,
-            remaining: -request.durationDays,
-          },
-        },
-        { upsert: true },
+      await this.leaveEntitlementRepository.updateBalance(
+        request.employeeId,
+        request.leaveTypeId,
+        request.durationDays
       );
       updated++;
     }

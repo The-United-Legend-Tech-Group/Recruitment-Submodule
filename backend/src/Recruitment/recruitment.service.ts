@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Contract, ContractDocument } from './models/contract.schema';
-import { Document, DocumentDocument } from './models/document.schema';
-import { Onboarding, OnboardingDocument } from './models/onboarding.schema';
+
+import { DocumentDocument } from './models/document.schema';
+
 import { Notification } from '../employee-subsystem/notification/models/notification.schema';
 import { DocumentType } from './enums/document-type.enum';
 import { OnboardingTaskStatus } from './enums/onboarding-task-status.enum';
@@ -23,28 +23,29 @@ import { SendOfferDto } from './DTO/send-offer.dto';
 import { CandidateRespondOfferDto } from './DTO/candidate-respond-offer.dto';
 import { EmployeeService } from '../employee-subsystem/employee/employee.service';
 //import { PayrollExecutionService } from '../payroll-execution/payroll-execution.service';
-import { Offer, OfferDocument } from './models/offer.schema';
+
 import { signingBonus, signingBonusDocument } from '../payroll/config_setup/models/signingBonus.schema';
 import { payGrade, payGradeDocument } from '../payroll/config_setup/models/payGrades.schema';
 import { OfferResponseStatus } from './enums/offer-response-status.enum';
 import { OfferFinalStatus } from './enums/offer-final-status.enum';
 
 //
-import { Model, Types } from 'mongoose';
-import { JobTemplate, JobTemplateDocument } from './models/job-template.schema';
-import { JobRequisition, JobRequisitionDocument } from './models/job-requisition.schema';
-import { Application, ApplicationDocument } from './models/application.schema';
-import { ApplicationStatusHistory, ApplicationStatusHistoryDocument } from './models/application-history.schema';
-import { Interview, InterviewDocument } from './models/interview.schema';
-import { EmployeeProfileDocument } from '../employee-subsystem/employee/models/employee-profile.schema';
-import { Referral, ReferralDocument } from './models/referral.schema';
+import { Types } from 'mongoose';
+import { JobTemplateDocument } from './models/job-template.schema';
+import { JobRequisitionDocument } from './models/job-requisition.schema';
+import { ApplicationDocument } from './models/application.schema';
+
+import { InterviewDocument } from './models/interview.schema';
+//import { EmployeeProfileDocument } from '../employee-subsystem/employee/models/employee-profile.schema';
+import { ReferralDocument } from './models/referral.schema';
 
 import { NotificationService } from '../employee-subsystem/notification/notification.service';
 import { ApplicationStage } from './enums/application-stage.enum';
 import { ApplicationStatus } from './enums/application-status.enum';
 import { InterviewStatus } from './enums/interview-status.enum';
 import { InterviewMethod } from './enums/interview-method.enum';
-import { SystemRole, EmployeeStatus } from '../employee-subsystem/employee/enums/employee-profile.enums';
+import { /*SystemRole, EmployeeStatus,*/ CandidateStatus } from '../employee-subsystem/employee/enums/employee-profile.enums';
+import type { UpdateCandidateStatusDto } from '../employee-subsystem/employee/dto/update-candidate-status.dto';
 
 import { CreateJobTemplateDto } from './dtos/create-job-template.dto';
 import { CreateJobRequisitionDto } from './dtos/create-job-requisition.dto';
@@ -58,32 +59,47 @@ import { UpdateInterviewDto } from './dtos/Update-interview.dto';
 import { CreateReferralDto } from './dtos/create-referral.dto';
 
 
-import { EmployeeProfileRepository } from '../employee-subsystem/employee/repository/employee-profile.repository';
+//import { EmployeeProfileRepository } from '../employee-subsystem/employee/repository/employee-profile.repository';
 import { CandidateRepository } from '../employee-subsystem/employee/repository/candidate.repository';
-import { EmployeeSystemRoleRepository } from '../employee-subsystem/employee/repository/employee-system-role.repository';
+//import { EmployeeSystemRoleRepository } from '../employee-subsystem/employee/repository/employee-system-role.repository';
+
+// Repository implementations
+import {
+  JobTemplateRepository,
+  JobRequisitionRepository,
+  ApplicationRepository,
+  InterviewRepository,
+  DocumentRepository,
+  ReferralRepository,
+  ApplicationHistoryRepository,
+  OfferRepository,
+  ContractRepository,
+  OnboardingRepository
+} from './repositories';
 
 @Injectable()
 export class RecruitmentService {
   constructor(
-    @InjectModel(Contract.name) private contractModel: mongoose.Model<ContractDocument>,
-    @InjectModel(Document.name) private documentModel: mongoose.Model<DocumentDocument>,
-    @InjectModel(Onboarding.name) private onboardingModel: mongoose.Model<OnboardingDocument>,
     @InjectModel(Notification.name) private notificationModel: mongoose.Model<Notification>,
-    @InjectModel(Offer.name) private offerModel: mongoose.Model<OfferDocument>,
     @InjectModel(signingBonus.name) private signingBonusModel: mongoose.Model<signingBonusDocument>,
     @InjectModel(payGrade.name) private payGradeModel: mongoose.Model<payGradeDocument>,
     private readonly employeeService: EmployeeService,
-    //
-    @InjectModel(JobTemplate.name) private jobTemplateModel: Model<JobTemplateDocument>,
-    @InjectModel(JobRequisition.name) private jobRequisitionModel: Model<JobRequisitionDocument>,
-    @InjectModel(Application.name) private applicationModel: Model<ApplicationDocument>,
-    @InjectModel(ApplicationStatusHistory.name) private applicationHistoryModel: Model<ApplicationStatusHistoryDocument>,
-    @InjectModel(Interview.name) private interviewModel: Model<InterviewDocument>,
-    @InjectModel(Referral.name) private referralModel: Model<ReferralDocument>,
+    // Repository dependencies
+    private readonly jobTemplateRepository: JobTemplateRepository,
+    private readonly jobRequisitionRepository: JobRequisitionRepository,
+    private readonly applicationRepository: ApplicationRepository,
+    private readonly applicationHistoryRepository: ApplicationHistoryRepository,
+    private readonly interviewRepository: InterviewRepository,
+    private readonly documentRepository: DocumentRepository,
+    private readonly referralRepository: ReferralRepository,
+    private readonly offerRepository: OfferRepository,
+    private readonly contractRepository: ContractRepository,
+    private readonly onboardingRepository: OnboardingRepository,
+
     private readonly notificationService: NotificationService,
-    private readonly employeeProfileRepository: EmployeeProfileRepository,
+    // private readonly employeeProfileRepository: EmployeeProfileRepository,
     private readonly candidateRepository: CandidateRepository,
-    private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
+    //private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
     //private payrollExecutionService: PayrollExecutionService,
   ) { }
 
@@ -108,14 +124,14 @@ export class RecruitmentService {
     const grossSalaryAmount = salaryConfig ? salaryConfig.grossSalary : 0;
 
     // Create the offer
-    const offer = new this.offerModel({
+    const offerData = {
       applicationId: new mongoose.Types.ObjectId(applicationId),
       candidateId: new mongoose.Types.ObjectId(candidateId),
       hrEmployeeId: new mongoose.Types.ObjectId(hrEmployeeId),
       grossSalary: grossSalaryAmount,
       signingBonus: signingBonusAmount,
       role,
-      benefits,
+      benefits: benefits as any,
       conditions,
       insurances,
       content,
@@ -123,9 +139,9 @@ export class RecruitmentService {
       applicantResponse: OfferResponseStatus.PENDING,
       finalStatus: OfferFinalStatus.PENDING,
       approvers: [],
-    });
+    };
 
-    await offer.save();
+    const offer = await this.offerRepository.create(offerData);
 
     return {
       success: true,
@@ -143,7 +159,7 @@ export class RecruitmentService {
   async addOfferApprover(dto: AddOfferApproverDto) {
     const { offerId, employeeId, role } = dto;
 
-    const offer = await this.offerModel.findById(offerId);
+    const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
@@ -166,7 +182,7 @@ export class RecruitmentService {
       comment: null,
     });
 
-    await offer.save();
+    await this.offerRepository.updateById(offerId, { approvers: offer.approvers });
 
     return {
       success: true,
@@ -180,7 +196,7 @@ export class RecruitmentService {
   async approveOffer(dto: ApproveOfferDto) {
     const { offerId, employeeId, status, comment } = dto;
 
-    const offer = await this.offerModel.findById(offerId);
+    const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
@@ -211,7 +227,10 @@ export class RecruitmentService {
       offer.finalStatus = OfferFinalStatus.REJECTED;
     }
 
-    await offer.save();
+    await this.offerRepository.updateById(offerId, {
+      approvers: offer.approvers,
+      finalStatus: offer.finalStatus
+    });
 
     return {
       success: true,
@@ -227,7 +246,7 @@ export class RecruitmentService {
   async sendOffer(dto: SendOfferDto) {
     const { offerId } = dto;
 
-    const offer = await this.offerModel.findById(offerId);
+    const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
@@ -241,12 +260,12 @@ export class RecruitmentService {
     }
 
     // Mark offer as sent
-    await offer.save();
+    await this.offerRepository.updateById(offerId, { finalStatus: 'sent' });
 
     // Update candidate status to OFFER_SENT
     await this.employeeService.updateCandidateStatus(
       offer.candidateId.toString(),
-      'OFFER_SENT'
+      { status: CandidateStatus.OFFER_SENT } as UpdateCandidateStatusDto
     );
 
     // TODO: Send email/notification to candidate with offer letter
@@ -273,7 +292,7 @@ export class RecruitmentService {
   async candidateRespondOffer(dto: CandidateRespondOfferDto) {
     const { offerId, candidateId, response, notes } = dto;
 
-    const offer = await this.offerModel.findById(offerId);
+    const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
@@ -292,19 +311,19 @@ export class RecruitmentService {
       // Update candidate status to OFFER_ACCEPTED
       await this.employeeService.updateCandidateStatus(
         candidateId,
-        'OFFER_ACCEPTED'
+        { status: CandidateStatus.OFFER_ACCEPTED } as UpdateCandidateStatusDto
       );
 
       // Automatically create contract when offer is accepted
-      const contract = new this.contractModel({
+      const contractData = {
         offerId: offer._id,
         acceptanceDate: new Date(),
         grossSalary: offer.grossSalary,
         signingBonus: offer.signingBonus,
         role: offer.role,
         benefits: offer.benefits,
-      });
-      await contract.save();
+      };
+      await this.contractRepository.create(contractData);
 
       // Send notification
       const notification = new this.notificationModel({
@@ -324,7 +343,7 @@ export class RecruitmentService {
       // Update candidate status to REJECTED
       await this.employeeService.updateCandidateStatus(
         candidateId,
-        'REJECTED'
+        { status: CandidateStatus.REJECTED } as UpdateCandidateStatusDto
       );
 
       // Notify HR
@@ -353,16 +372,17 @@ export class RecruitmentService {
   async signContract(dto: UploadSignedContractDto, files: any[]) {
     const { contractId, candidateId, mainContractFileIndex, signedAt, documentTypes } = dto;
 
-    const contract = await this.contractModel.findById(contractId);
+    const contract = await this.contractRepository.findById(contractId);
     if (!contract) {
       throw new NotFoundException('Contract not found');
     }
 
     if (!files || files.length === 0) {
       // nothing to attach — simply update signedAt if provided
-      contract.employeeSignedAt = signedAt ? new Date(signedAt) : new Date();
-      await contract.save();
-      return contract;
+      const updatedContract = await this.contractRepository.updateById(contractId, {
+        employeeSignedAt: signedAt ? new Date(signedAt) : new Date()
+      });
+      return updatedContract;
     }
 
     // determine which file is the main signed contract
@@ -386,13 +406,13 @@ export class RecruitmentService {
       } else {
         docType = i === mainIndex ? DocumentType.CONTRACT : DocumentType.CERTIFICATE;
       }
-      const doc = new this.documentModel({
+      const docData = {
         ownerId: candidateId ? new mongoose.Types.ObjectId(candidateId) : undefined,
         type: docType,
         filePath: (f as any).path || (f as any).filename || f.originalname,
         uploadedAt: new Date(),
-      });
-      await doc.save();
+      };
+      const doc = await this.documentRepository.create(docData);
       createdDocs.push(doc);
     }
 
@@ -417,7 +437,7 @@ export class RecruitmentService {
   async hrSignContract(dto: HrSignContractDto) {
     const { contractId, hrEmployeeId, signedAt } = dto;
 
-    const contract = await this.contractModel.findById(contractId);
+    const contract = await this.contractRepository.findById(contractId);
     if (!contract) {
       throw new NotFoundException('Contract not found');
     }
@@ -426,23 +446,19 @@ export class RecruitmentService {
       throw new BadRequestException('Employee must sign the contract first');
     }
 
-    contract.employerSignedAt = signedAt ? new Date(signedAt) : new Date();
+    const updateData: any = {
+      employerSignedAt: signedAt ? new Date(signedAt) : new Date()
+    };
+
     // optionally store which HR employee signed
     if (hrEmployeeId) {
-      contract.employerSignatureUrl = `hr-signed-by-${hrEmployeeId}`;
+      updateData.employerSignatureUrl = `hr-signed-by-${hrEmployeeId}`;
     }
 
-    await contract.save();
+    await this.contractRepository.updateById(contractId, updateData);
 
     // Get candidateId from the offer for onboarding and bonus processing
-    const populatedContract = await this.contractModel.findById(contractId)
-      .populate({
-        path: 'offerId',
-        populate: {
-          path: 'candidateId',
-          model: 'Candidate'
-        }
-      });
+    const populatedContract = await this.contractRepository.findById(contractId);
     const offer = populatedContract?.offerId as any;
 
     // Automatically trigger onboarding when BOTH employee and HR have signed
@@ -452,7 +468,7 @@ export class RecruitmentService {
       // Update candidate status to HIRED
       await this.employeeService.updateCandidateStatus(
         candidate._id ? candidate._id.toString() : candidate.toString(),
-        'HIRED'
+        { status: CandidateStatus.HIRED } as UpdateCandidateStatusDto
       );
 
       // Create employee profile first using candidate's actual data
@@ -546,20 +562,18 @@ export class RecruitmentService {
       const f = files[i];
       const docType = documentTypes[i] as DocumentType;
 
-      const doc = new this.documentModel({
+      const docData = {
         ownerId: new mongoose.Types.ObjectId(employeeId),
         type: docType,
         filePath: (f as any).path || (f as any).filename || f.originalname,
         uploadedAt: new Date(),
-      });
-      await doc.save();
+      };
+      const doc = await this.documentRepository.create(docData);
       createdDocs.push(doc);
     }
 
     // Automatically update onboarding tasks based on uploaded document types
-    const onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    });
+    const onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     const updatedTasks: string[] = [];
     if (onboarding) {
@@ -625,20 +639,21 @@ export class RecruitmentService {
     }));
 
     // Check if onboarding already exists
-    let onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    });
+    let onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     if (onboarding) {
       // Add new tasks to existing onboarding
       onboarding.tasks.push(...formattedTasks);
-      await onboarding.save();
+      const updatedOnboarding = await this.onboardingRepository.updateById(
+        onboarding._id.toString(),
+        { tasks: onboarding.tasks }
+      );
 
       return {
         success: true,
         message: 'Tasks added to existing onboarding checklist',
         onboardingId: onboarding._id,
-        onboarding,
+        onboarding: updatedOnboarding,
         tasksAdded: formattedTasks.length,
       };
     }
@@ -648,14 +663,14 @@ export class RecruitmentService {
       throw new BadRequestException('contractId is required when creating a new onboarding');
     }
 
-    onboarding = new this.onboardingModel({
+    const onboardingData = {
       employeeId: new mongoose.Types.ObjectId(employeeId),
       contractId: new mongoose.Types.ObjectId(dto.contractId),
       tasks: formattedTasks,
       completed: false,
-    });
+    };
 
-    await onboarding.save();
+    onboarding = await this.onboardingRepository.create(onboardingData);
 
     return {
       success: true,
@@ -744,9 +759,7 @@ export class RecruitmentService {
     }
 
     // Check if onboarding already exists
-    let onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    });
+    let onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     if (onboarding) {
       // Add new tasks to existing onboarding
@@ -777,14 +790,14 @@ export class RecruitmentService {
       throw new BadRequestException('contractId is required when creating a new onboarding');
     }
 
-    onboarding = new this.onboardingModel({
+    const onboardingData = {
       employeeId: new mongoose.Types.ObjectId(employeeId),
       contractId: new mongoose.Types.ObjectId(contractId),
       tasks,
       completed: false,
-    });
+    };
 
-    await onboarding.save();
+    onboarding = await this.onboardingRepository.create(onboardingData);
 
     // Send notification to System Admin for IT and Admin tasks
     if (includeITTasks || includeAdminTasks) {
@@ -825,9 +838,7 @@ export class RecruitmentService {
   async getOnboardingChecklist(dto: GetOnboardingChecklistDto) {
     const { employeeId } = dto;
 
-    const onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    }).populate('tasks.documentId');
+    const onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     if (!onboarding) {
       throw new NotFoundException('No onboarding checklist found for this employee');
@@ -864,9 +875,7 @@ export class RecruitmentService {
   async sendOnboardingReminders(dto: SendOnboardingReminderDto) {
     const { employeeId, daysBeforeDeadline = 1 } = dto;
 
-    const onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    });
+    const onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     if (!onboarding) {
       throw new NotFoundException('No onboarding checklist found for this employee');
@@ -912,7 +921,7 @@ export class RecruitmentService {
   // Call this method from a scheduled job/cron to check all employees
   //ONB-005
   async sendAllOnboardingReminders(daysBeforeDeadline: number = 1) {
-    const onboardings = await this.onboardingModel.find({ completed: false });
+    const onboardings = await this.onboardingRepository.findByStatus(false);
 
     const results: any[] = [];
     for (const onboarding of onboardings) {
@@ -939,9 +948,7 @@ export class RecruitmentService {
   async updateTaskStatus(dto: UpdateTaskStatusDto) {
     const { employeeId, taskName, status, documentId } = dto;
 
-    const onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    });
+    const onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     if (!onboarding) {
       throw new NotFoundException('No onboarding checklist found for this employee');
@@ -980,9 +987,7 @@ export class RecruitmentService {
   async cancelOnboarding(dto: CancelOnboardingDto) {
     const { employeeId, reason, notes } = dto;
 
-    const onboarding = await this.onboardingModel.findOne({
-      employeeId: new mongoose.Types.ObjectId(employeeId)
-    });
+    const onboarding = await this.onboardingRepository.findByEmployeeId(employeeId);
 
     if (!onboarding) {
       throw new NotFoundException('No onboarding checklist found for this employee');
@@ -1024,7 +1029,8 @@ export class RecruitmentService {
   }
   // ADDING AHMED'S STUFF HERE
 
-  async validateEmployeeExistence(employeeId: string, roles: SystemRole[]): Promise<boolean> {
+  /*async validateEmployeeExistence(employeeId: string, roles: SystemRole[]): Promise<boolean> {
+    return true
     try {
       const employee = await this.employeeProfileRepository.findById(employeeId);
 
@@ -1043,42 +1049,42 @@ export class RecruitmentService {
       // If getProfile throws NotFoundException, HR doesn't exist
       return false;
     }
-  }
+  }*/
 
   // Helper method to check if employee has HR role
-  private async checkIfEmployeeIsAsExpected(employee: EmployeeProfileDocument | any, roles: SystemRole[]): Promise<boolean> {
-    try {
-      const employeeId = employee._id || employee.id;
-
-      // Find the employee's system roles
-      const employeeSystemRole = await this.employeeSystemRoleRepository.findOne({
-        employeeProfileId: new Types.ObjectId(employeeId),
-        isActive: true
-      });
-
-      if (!employeeSystemRole) {
-        return false;
-      }
-
-      // Check if employee has any HR-related role
-
-      return employeeSystemRole.roles.some(role => roles.includes(role));
-    } catch (error) {
-      console.error('Error checking HR role:', error);
-      return false;
-    }
-  }
-
-  // Helper method to check if employee is active
-  private checkIfEmployeeIsActive(employee: EmployeeProfileDocument | any): boolean {
-    try {
-      return employee.status === EmployeeStatus.ACTIVE;
-    } catch (error) {
-      console.error('Error checking employee status:', error);
-      return false;
-    }
-  }
-
+  /* private async checkIfEmployeeIsAsExpected(employee: EmployeeProfileDocument | any, roles: SystemRole[]): Promise<boolean> {
+     try {
+       const employeeId = employee._id || employee.id;
+ 
+       // Find the employee's system roles
+       const employeeSystemRole = await this.employeeSystemRoleRepository.findOne({
+         employeeProfileId: new Types.ObjectId(employeeId),
+         isActive: true
+       });
+ 
+       if (!employeeSystemRole) {
+         return false;
+       }
+ 
+       // Check if employee has any HR-related role
+ 
+       return employeeSystemRole.roles.some(role => roles.includes(role));
+     } catch (error) {
+       console.error('Error checking HR role:', error);
+       return false;
+     }
+   }
+ 
+   // Helper method to check if employee is active
+   private checkIfEmployeeIsActive(employee: EmployeeProfileDocument | any): boolean {
+     try {
+       return employee.status === EmployeeStatus.ACTIVE;
+     } catch (error) {
+       console.error('Error checking employee status:', error);
+       return false;
+     }
+   }
+ */
   private async validateCandidateExistence(candidateId: string): Promise<boolean> {
     try {
       const candidate = await this.candidateRepository.findById(candidateId);
@@ -1099,11 +1105,10 @@ export class RecruitmentService {
 
   //REC-003: Create Job Template and Job Requisition
   async createjob_template(createjob_template: CreateJobTemplateDto): Promise<JobTemplateDocument> {
-    const template = new this.jobTemplateModel(createjob_template)
-    return await template.save()
+    return await this.jobTemplateRepository.create(createjob_template);
   }
   async createjob_requision(createjob_requision: CreateJobRequisitionDto): Promise<JobRequisitionDocument> {
-    const templateExists = await this.jobTemplateModel.findById(createjob_requision.templateId).lean();
+    const templateExists = await this.jobTemplateRepository.findById(createjob_requision.templateId);
     if (!templateExists) {
       throw new NotFoundException(`Job template with id ${createjob_requision.templateId} not found`);
     }
@@ -1113,17 +1118,23 @@ export class RecruitmentService {
     if (!createjob_requision.hiringManagerId) {
       throw new NotFoundException(`Hiring Manager ID is required`);
     }
-    const isHiringManagerValid = await this.validateEmployeeExistence(createjob_requision.hiringManagerId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN]);
-    if (!isHiringManagerValid) {
-      throw new NotFoundException(`Hiring Manager with id ${createjob_requision.hiringManagerId} is not valid or not active`);
-    }
-    const requisition = new this.jobRequisitionModel(createjob_requision);
-    return await requisition.save()
+    /* const isHiringManagerValid = await this.validateEmployeeExistence(createjob_requision.hiringManagerId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN]);
+     if (!isHiringManagerValid) {
+       throw new NotFoundException(`Hiring Manager with id ${createjob_requision.hiringManagerId} is not valid or not active`);
+     }*/
+    const jobRequisitionData = {
+      ...createjob_requision,
+      templateId: new Types.ObjectId(createjob_requision.templateId),
+      hiringManagerId: new Types.ObjectId(createjob_requision.hiringManagerId),
+      postingDate: createjob_requision.postingDate ? new Date(createjob_requision.postingDate) : undefined,
+      expiryDate: createjob_requision.expiryDate ? new Date(createjob_requision.expiryDate) : undefined
+    };
+    return await this.jobRequisitionRepository.create(jobRequisitionData);
   }
 
   //HELPS IN Doing REC-023
   async updatejob_requisition(requisitionId: string, updatejob_requisition: UpdateJobRequisitionDto): Promise<JobRequisitionDocument> {
-    const templateExists = await this.jobTemplateModel.findById(updatejob_requisition.templateId).lean();
+    const templateExists = await this.jobTemplateRepository.findById(updatejob_requisition.templateId);
     if (!templateExists) {
       throw new NotFoundException(`Job template with id ${updatejob_requisition.templateId} not found`);
     }
@@ -1131,10 +1142,18 @@ export class RecruitmentService {
       throw new NotFoundException(`Number of openings must be greater than zero`);
     }
     //if () {} can check who will be updating 
-    const requisition = await this.jobRequisitionModel.findOneAndUpdate(
-      { requisitionId: requisitionId }, // Correct: plain object filter
-      updatejob_requisition,
-      { new: true }
+    // Resolve whether requisitionId is a Mongo ObjectId or a business requisitionId (e.g. "REQ-2025")
+    let targetId = requisitionId;
+    if (!mongoose.isValidObjectId(requisitionId)) {
+      const found = await this.jobRequisitionRepository.findOne({ requisitionId: requisitionId });
+      if (!found) {
+        throw new NotFoundException(`Job requisition with requisitionId ${requisitionId} not found`);
+      }
+      targetId = found._id.toString();
+    }
+    const requisition = await this.jobRequisitionRepository.updateById(
+      targetId,
+      updatejob_requisition
     );
 
     if (!requisition) {
@@ -1146,11 +1165,7 @@ export class RecruitmentService {
   // REC:-023
   async getAllpublishedJobRequisition(): Promise<JobRequisitionDocument[]> {
     // can add validation for who is requesting
-    return this.jobRequisitionModel
-      .find({ publishStatus: 'published' })
-      //.populate('templateId')
-      //.populate('hiringManagerId', 'name email')
-      .exec();
+    return this.jobRequisitionRepository.find({ publishStatus: 'published' });
   }
   // REC-007: Create CV Document
   async createCVDocument(createCVDocumentDto: CreateCVDocumentDto): Promise<DocumentDocument> {
@@ -1162,16 +1177,18 @@ export class RecruitmentService {
       throw new NotFoundException(`Document type must be 'cv'`);
     }
 
-    const document = new this.documentModel({
+    const documentData = {
       ...createCVDocumentDto,
+      ownerId: createCVDocumentDto.ownerId ? new Types.ObjectId(createCVDocumentDto.ownerId) : undefined,
       uploadedAt: createCVDocumentDto.uploadedAt || new Date()
-    }); return await document.save();
+    };
+    return await this.documentRepository.create(documentData);
   }
 
   //REC-007: Create Application
   async createApplication(createApplicationDto: CreateApplicationDto): Promise<ApplicationDocument> {
     // Find the requisition by user-defined requisitionId
-    const requisition = await this.jobRequisitionModel.findOne({ requisitionId: createApplicationDto.requisitionId }).lean();
+    const requisition = await this.jobRequisitionRepository.findOne({ requisitionId: createApplicationDto.requisitionId });
     if (!requisition) {
       throw new NotFoundException(`Job requisition with id ${createApplicationDto.requisitionId} not found`);
     }
@@ -1180,26 +1197,26 @@ export class RecruitmentService {
       throw new NotFoundException(`Candidate with id ${createApplicationDto.candidateId} is not valid or not active`);
     }
     // Check if application already exists for this candidate and requisition
-    const existingApplication = await this.applicationModel.findOne({
+    const existingApplication = await this.applicationRepository.findOne({
       candidateId: new Types.ObjectId(createApplicationDto.candidateId),
       requisitionId: requisition._id
-    }).lean();
+    });
 
     if (existingApplication) {
       throw new Error(`Application already exists for candidate ${createApplicationDto.candidateId} and requisition ${createApplicationDto.requisitionId}`);
     }
 
-    const application = new this.applicationModel({
+    const applicationData = {
       candidateId: new Types.ObjectId(createApplicationDto.candidateId),
       requisitionId: requisition._id, // Use the MongoDB _id of the found requisition
       assignedHr: createApplicationDto.assignedHr ? new Types.ObjectId(createApplicationDto.assignedHr) : undefined
-    });
+    };
 
-    return application.save();
+    return await this.applicationRepository.create(applicationData);
   }
   //could be REC-017 ,related ,also need to add validation for it being hr or candidate
   async getApplicationById(applicationId: string): Promise<ApplicationDocument> {
-    const application = await this.applicationModel.findById(applicationId).exec();
+    const application = await this.applicationRepository.findById(applicationId);
     if (!application) {
       throw new NotFoundException(`Application with id ${applicationId} not found`);
     }
@@ -1210,36 +1227,34 @@ export class RecruitmentService {
     if (!await this.validateCandidateExistence(candidateId)) {
       throw new NotFoundException(`Candidate with id ${candidateId} is not valid or not active`);
     }
-    return this.applicationModel
-      .find({ candidateId: new Types.ObjectId(candidateId) })
-      .exec();
+    console.log("Candidate ID validated:", candidateId);
+    return this.applicationRepository.findByCandidateId(candidateId);
   }
 
   // REC-017 part2 & REC-022: Update Application Status/Stage by candidateId and requisitionId
-  async updateApplication(applicationId: string, updateApplicationDto: UpdateApplicationDto): Promise<ApplicationDocument> {
-    // Validate HR exists and has proper role
-    const isValidHR = await this.validateEmployeeExistence(updateApplicationDto.hrId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE]);
+  async updateApplication(applicationId: string, updateApplicationDto: UpdateApplicationDto, hrId: string): Promise<ApplicationDocument> {
+    //Validate HR exists and has proper role
+    /*const isValidHR = await this.validateEmployeeExistence(hrId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE]);
     if (!isValidHR) {
-      throw new NotFoundException(`HR with id ${updateApplicationDto.hrId} is not valid or not active`);
-    }
+      throw new NotFoundException(`HR with id ${hrId} is not valid or not active`);
+    }*/
 
     // Use the ID from DTO if provided, otherwise use the parameter
     const targetApplicationId = applicationId;
 
     // Find the application to update
-    const currentApplication = await this.applicationModel.findById(targetApplicationId).exec();
+    const currentApplication = await this.applicationRepository.findById(targetApplicationId);
     if (!currentApplication) {
       throw new NotFoundException(`Application with id ${targetApplicationId} not found`);
     }
 
     // Prepare update data (exclude id and hrId from the update)
-    const { hrId, ...updateData } = updateApplicationDto;
+    const { ...updateData } = updateApplicationDto;
 
     // Update the application directly by ID
-    const updatedApplication = await this.applicationModel.findByIdAndUpdate(
+    const updatedApplication = await this.applicationRepository.updateById(
       targetApplicationId,
-      updateData,
-      { new: true }
+      updateData
     );
 
     if (!updatedApplication) {
@@ -1248,16 +1263,16 @@ export class RecruitmentService {
 
     // Create history record if there were changes
     if (updateApplicationDto.currentStage || updateApplicationDto.status) {
-      const historyRecord = new this.applicationHistoryModel({
+      const historyRecordData = {
         applicationId: currentApplication._id,
         oldStage: currentApplication.currentStage,
         newStage: updateApplicationDto.currentStage || currentApplication.currentStage,
         oldStatus: currentApplication.status,
         newStatus: updateApplicationDto.status || currentApplication.status,
-        changedBy: new Types.ObjectId(updateApplicationDto.hrId) // TODO: Replace with actual user ID from auth context
-      });
+        changedBy: new Types.ObjectId(hrId) // TODO: Replace with actual user ID from auth context
+      };
 
-      await historyRecord.save();
+      await this.applicationHistoryRepository.create(historyRecordData);
     }
 
     // Create interview if needed (when stage changes to interview and interview data provided)
@@ -1270,7 +1285,7 @@ export class RecruitmentService {
       }*/
 
     // Get requisition details for notification
-    const requisition = await this.jobRequisitionModel.findById(updatedApplication.requisitionId).exec();
+    const requisition = await this.jobRequisitionRepository.findById(updatedApplication.requisitionId.toString());
     const requisitionId = requisition?.requisitionId || 'Unknown';
 
     // Send notifications after successful update
@@ -1325,6 +1340,7 @@ export class RecruitmentService {
       };
 
       try {
+        console.log('Sending application status notification to recipients:', recipients);
         await this.notificationService.create(notificationData);
       } catch (error) {
         console.error('Failed to send application status notification:', error);
@@ -1447,9 +1463,12 @@ export class RecruitmentService {
     if (!application) {
       throw new NotFoundException(`Application with id ${createInterviewDto.applicationId} not found`);
     }
-    if (!await this.validateEmployeeExistence(createInterviewDto.hrId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE])) {
-      throw new NotFoundException(`HR with id ${createInterviewDto.hrId} not found or does not have the required role`);
+    if (application.status === ApplicationStatus.REJECTED || application.status === ApplicationStatus.HIRED) {
+      throw new NotFoundException(`Cannot schedule interview for application with status ${application.status}`);
     }
+    /* if (!await this.validateEmployeeExistence(createInterviewDto.hrId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE])) {
+      throw new NotFoundException(`HR with id ${createInterviewDto.hrId} not found or does not have the required role`);
+    }*/
     if (!createInterviewDto.panel || createInterviewDto.panel.length === 0) {
       throw new NotFoundException('At least one interviewer/panel member is required to schedule an interview');
     }
@@ -1470,8 +1489,12 @@ export class RecruitmentService {
       createInterviewDto.stage !== ApplicationStage.DEPARTMENT_INTERVIEW) {
       throw new NotFoundException('Interview can only be created for HR or Department interview stages');
     }
-
-    const interview = new this.interviewModel({
+    if (application.currentStage !== ApplicationStage.HR_INTERVIEW &&
+      application.currentStage !== ApplicationStage.DEPARTMENT_INTERVIEW) {
+      throw new NotFoundException('Interview can only be created for HR or Department interview stages');
+    }
+    console.log('Creating interview with data:', application.currentStage);
+    const interviewData = {
       applicationId: new Types.ObjectId(createInterviewDto.applicationId),
       stage: createInterviewDto.stage,
       scheduledDate: createInterviewDto.scheduledDate,
@@ -1480,9 +1503,9 @@ export class RecruitmentService {
       calendarEventId: createInterviewDto.calendarEventId,
       videoLink: createInterviewDto.videoLink,
       status: createInterviewDto.status || InterviewStatus.SCHEDULED,
-    });
+    };
 
-    const savedInterview = await interview.save();
+    const savedInterview = await this.interviewRepository.create(interviewData);
 
     // Send notification about interview scheduling
     await this.sendInterviewNotification(savedInterview, application, 'scheduled');
@@ -1494,12 +1517,7 @@ export class RecruitmentService {
    * Get interview by application ID and stage
    */
   async getInterviewByApplication(applicationId: string): Promise<InterviewDocument[]> {
-    const filter: any = { applicationId: new Types.ObjectId(applicationId) };
-
-    return this.interviewModel.find(filter)
-      .populate('applicationId')
-      .populate('panel', 'name email')
-      .exec();
+    return await this.interviewRepository.findByApplicationId(applicationId);
   }
 
   /**
@@ -1508,31 +1526,34 @@ export class RecruitmentService {
   async updateInterview(interviewId: string, updateInterviewDto: UpdateInterviewDto): Promise<InterviewDocument> {
     // Validate HR exists and has proper role if hrId is provided
     if (updateInterviewDto.hrId) {
-      const isValidHR = await this.validateEmployeeExistence(updateInterviewDto.hrId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE]);
+      /*const isValidHR = await this.validateEmployeeExistence(updateInterviewDto.hrId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE]);
       if (!isValidHR) {
         throw new NotFoundException(`HR with id ${updateInterviewDto.hrId} is not valid or not active`);
-      }
+      }*/
     }
 
-    const interview = await this.interviewModel.findById(interviewId);
+    const interview = await this.interviewRepository.findById(interviewId);
     if (!interview) {
       throw new NotFoundException(`Interview with id ${interviewId} not found`);
     }
 
-    // Update all fields from DTO if provided
-    if (updateInterviewDto.applicationId) interview.applicationId = new Types.ObjectId(updateInterviewDto.applicationId);
-    if (updateInterviewDto.stage) interview.stage = updateInterviewDto.stage;
-    if (updateInterviewDto.scheduledDate) interview.scheduledDate = updateInterviewDto.scheduledDate;
-    if (updateInterviewDto.method) interview.method = updateInterviewDto.method;
-    if (updateInterviewDto.panel) interview.panel = updateInterviewDto.panel.map(id => new Types.ObjectId(id));
-    if (updateInterviewDto.calendarEventId !== undefined) interview.calendarEventId = updateInterviewDto.calendarEventId;
-    if (updateInterviewDto.videoLink !== undefined) interview.videoLink = updateInterviewDto.videoLink;
-    if (updateInterviewDto.status) interview.status = updateInterviewDto.status;
-    if (updateInterviewDto.feedbackId) interview.feedbackId = new Types.ObjectId(updateInterviewDto.feedbackId);
-    if (updateInterviewDto.candidateFeedback !== undefined) interview.candidateFeedback = updateInterviewDto.candidateFeedback;
+    // Prepare update data
+    const updateData: any = {};
+    if (updateInterviewDto.scheduledDate) updateData.scheduledDate = updateInterviewDto.scheduledDate;
+    if (updateInterviewDto.method) updateData.method = updateInterviewDto.method;
+    if (updateInterviewDto.panel) updateData.panel = updateInterviewDto.panel.map(id => new Types.ObjectId(id));
+    if (updateInterviewDto.calendarEventId !== undefined) updateData.calendarEventId = updateInterviewDto.calendarEventId;
+    if (updateInterviewDto.videoLink !== undefined) updateData.videoLink = updateInterviewDto.videoLink;
+    if (updateInterviewDto.status) updateData.status = updateInterviewDto.status;
+    if (updateInterviewDto.feedbackId) updateData.feedbackId = new Types.ObjectId(updateInterviewDto.feedbackId);
+    if (updateInterviewDto.candidateFeedback !== undefined) updateData.candidateFeedback = updateInterviewDto.candidateFeedback;
 
     const application = await this.getApplicationById(interview.applicationId.toString());
-    const updatedInterview = await interview.save();
+    const updatedInterview = await this.interviewRepository.updateById(interviewId, updateData);
+
+    if (!updatedInterview) {
+      throw new NotFoundException(`Failed to update interview with id ${interviewId}`);
+    }
 
     // Send notification about interview update
     await this.sendInterviewNotification(updatedInterview, application, updateInterviewDto.status || 'updated');
@@ -1632,7 +1653,7 @@ export class RecruitmentService {
  
      if (stageChanged && isInterviewStage && interviewData) {
        // Check if interview already exists for this stage
-       const existingInterview = await this.interviewModel.findOne({
+       const existingInterview = await this.interviewRepository.findOne({
          applicationId: updatedApplication._id,
          stage: updatedApplication.currentStage
        });
@@ -1656,20 +1677,20 @@ export class RecruitmentService {
    }*/
   async createReferral(candidateId: string, createReferralDto: CreateReferralDto): Promise<ReferralDocument> {
 
-    const isEmployeeValid = await this.validateEmployeeExistence(createReferralDto.referringEmployeeId, [SystemRole.HR_EMPLOYEE, SystemRole.HR_MANAGER, SystemRole.HR_ADMIN]);
-    if (!isEmployeeValid) {
-      throw new NotFoundException(`Employee with id ${createReferralDto.referringEmployeeId} is not valid or not active`);
-    }
+    /* const isEmployeeValid = await this.validateEmployeeExistence(createReferralDto.referringEmployeeId, [SystemRole.HR_EMPLOYEE, SystemRole.HR_MANAGER, SystemRole.HR_ADMIN]);
+     if (!isEmployeeValid) {
+       throw new NotFoundException(`Employee with id ${createReferralDto.referringEmployeeId} is not valid or not active`);
+     }*/
     if (!await this.validateCandidateExistence(candidateId)) {
       throw new NotFoundException(`Candidate with id ${candidateId} is not valid or not active`);
     }
-    const referral = new this.referralModel({
+    const referralData = {
       candidateId: new Types.ObjectId(candidateId),
       referringEmployeeId: new Types.ObjectId(createReferralDto.referringEmployeeId),
       role: createReferralDto.role,
       level: createReferralDto.level,
-    })
-    return await referral.save();
+    };
+    return await this.referralRepository.create(referralData);
   }
 
 }

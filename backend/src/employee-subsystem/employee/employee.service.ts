@@ -18,10 +18,14 @@ import { AdminUpdateEmployeeProfileDto } from './dto/admin-update-employee-profi
 import { CreateProfileChangeRequestDto } from './dto/create-profile-change-request.dto';
 import { UpdateEmployeeDepartmentDto } from './dto/update-employee-department.dto';
 import { UpdateEmployeePositionDto } from './dto/update-employee-position.dto';
-import { MaritalStatus, SystemRole, EmployeeStatus, ProfileChangeStatus } from './enums/employee-profile.enums';
+import { MaritalStatus, SystemRole, EmployeeStatus, ProfileChangeStatus, CandidateStatus } from './enums/employee-profile.enums';
 import { EmployeeSystemRoleRepository } from './repository/employee-system-role.repository';
 import { EmployeeProfileChangeRequestRepository } from './repository/ep-change-request.repository';
 import { PositionAssignmentRepository } from '../organization-structure/repository/position-assignment.repository';
+import { Candidate } from './models/candidate.schema';
+import { CandidateRepository } from './repository/candidate.repository';
+import { UpdateCandidateStatusDto } from './dto/update-candidate-status.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class EmployeeService {
@@ -35,6 +39,7 @@ export class EmployeeService {
     private readonly employeeProfileChangeRequestRepository: EmployeeProfileChangeRequestRepository,
     private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
     private readonly positionAssignmentRepository: PositionAssignmentRepository,
+    private readonly candidateRepository: CandidateRepository,
   ) { }
 
   async onboard(
@@ -193,6 +198,14 @@ export class EmployeeService {
       throw new NotFoundException('Employee not found');
     }
 
+    // Hash password if provided
+    if ((updateEmployeeProfileDto as any).password) {
+      (updateEmployeeProfileDto as any).password = await bcrypt.hash(
+        (updateEmployeeProfileDto as any).password,
+        10,
+      );
+    }
+
     // Apply the provided updates directly. This route is intended for HR admins
     // who are allowed to edit any profile fields. Validation/guards are handled
     // by the controller/authorization layer.
@@ -254,10 +267,71 @@ export class EmployeeService {
     return this.employeeProfileChangeRequestRepository.create(payload);
   }
 
+
+
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search?: string,
+  ) {
+    const result = await this.employeeProfileRepository.findAll(page, limit, search);
+
+
+    const items = await Promise.all(result.items.map(async (doc: any) => {
+      // Re-use logic or manual lookup if populates failed (common in this codebase's mixed patterns)
+      let positionTitle = 'N/A';
+      let departmentName = 'N/A';
+
+      if (doc.primaryPositionId) {
+        // Try to fetch if not populated
+        if (doc.primaryPositionId.title) {
+          positionTitle = doc.primaryPositionId.title;
+        } else {
+          const pos = await this.positionRepository.findById(doc.primaryPositionId);
+          if (pos) positionTitle = pos.title;
+        }
+      }
+
+      if (doc.primaryDepartmentId) {
+        const Department = this.employeeProfileModel.db.model('Department');
+        if (doc.primaryDepartmentId.name) {
+          departmentName = doc.primaryDepartmentId.name;
+        } else {
+          const dept = await Department.findById(doc.primaryDepartmentId).select('name').lean<{ name: string }>().exec();
+          if (dept) departmentName = dept.name;
+        }
+      }
+
+      return {
+        _id: doc._id,
+        firstName: doc.firstName,
+        lastName: doc.lastName,
+        email: doc.personalEmail, // or workEmail
+        employeeNumber: doc.employeeNumber,
+        position: { title: positionTitle },
+        department: { name: departmentName },
+        status: doc.status
+      };
+    }));
+
+    return {
+      items,
+      total: result.total,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit)
+    };
+  }
+
   async getTeamSummary(managerId: string) {
-    const items =
+    const result =
       await this.employeeProfileRepository.getTeamSummaryByManagerId(managerId);
-    return { managerId, items };
+    return {
+      managerId,
+      items: result.positionSummary, // Keep backward compatibility for frontend bits using 'items'
+      positionSummary: result.positionSummary,
+      roleSummary: result.roleSummary,
+    };
   }
 
   async getTeamProfiles(managerId: string) {
@@ -408,6 +482,33 @@ export class EmployeeService {
     const profileObj: any = employee.toObject ? employee.toObject() : employee;
     if (profileObj.password) delete profileObj.password;
 
+    // Manually populate position and department
+    if (profileObj.primaryPositionId) {
+      if (profileObj.primaryPositionId.title) {
+        profileObj.position = { title: profileObj.primaryPositionId.title };
+      } else {
+        const pos = await this.positionRepository.findById(profileObj.primaryPositionId.toString());
+        if (pos) {
+          profileObj.position = { title: pos.title, _id: pos._id };
+        }
+      }
+    }
+
+    if (profileObj.primaryDepartmentId) {
+      if (profileObj.primaryDepartmentId.name) {
+        profileObj.department = { name: profileObj.primaryDepartmentId.name };
+      } else {
+        const Department = this.employeeProfileModel.db.model('Department');
+        const dept = await Department.findById(profileObj.primaryDepartmentId)
+          .select('name')
+          .lean<{ name: string; _id: Types.ObjectId }>()
+          .exec();
+        if (dept) {
+          profileObj.department = { name: dept.name, _id: dept._id };
+        }
+      }
+    }
+
     // Fetch appraisal records for performance history (most recent first)
     const records: any[] = await this.appraisalRecordModel
       .find({ employeeProfileId: employeeId })
@@ -428,5 +529,86 @@ export class EmployeeService {
         appraisalHistory,
       },
     };
+  }
+
+  async getCandidate(candidateId: string): Promise<Candidate> {
+    const candidate = await this.candidateRepository.findById(candidateId);
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
+    }
+    return candidate;
+  }
+
+  async convertCandidateToEmployee(candidateId: string): Promise<EmployeeProfile> {
+    // 1. Fetch candidate with password
+    const candidate = await this.candidateRepository.findByIdWithPassword(candidateId);
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
+    }
+
+    if (candidate.status === CandidateStatus.HIRED) {
+      throw new ConflictException('Candidate is already hired');
+    }
+
+    // 2. Generate Employee Number (CAN-XXXX -> EMP-XXXX)
+    const employeeNumber = candidate.candidateNumber.replace('CAN-', 'EMP-');
+
+    // Check if employee number already exists (safety check)
+    const existingEmployee = await this.employeeProfileModel.exists({ employeeNumber });
+    if (existingEmployee) {
+      throw new ConflictException(`Employee with number ${employeeNumber} already exists`);
+    }
+
+    // 3. Create Employee Profile
+    const employeeData: Partial<EmployeeProfile> = {
+      // UserProfileBase fields
+      firstName: candidate.firstName,
+      middleName: candidate.middleName,
+      lastName: candidate.lastName,
+      fullName: candidate.fullName,
+      nationalId: candidate.nationalId,
+      gender: candidate.gender,
+      maritalStatus: candidate.maritalStatus,
+      dateOfBirth: candidate.dateOfBirth,
+      personalEmail: candidate.personalEmail,
+      mobilePhone: candidate.mobilePhone,
+      homePhone: candidate.homePhone,
+      address: candidate.address,
+      profilePictureUrl: candidate.profilePictureUrl,
+      password: candidate.password, // Copy password hash
+
+      // Employee specific fields
+      employeeNumber: employeeNumber,
+      primaryDepartmentId: candidate.departmentId,
+      primaryPositionId: candidate.positionId,
+      status: EmployeeStatus.ACTIVE,
+      statusEffectiveFrom: new Date(),
+      dateOfHire: new Date(),
+    };
+
+    // Save Employee Profile
+    const employeeProfile = await this.employeeProfileRepository.create(employeeData as EmployeeProfile);
+
+    // 4. Update Candidate Status
+    await this.candidateRepository.updateById(candidateId, { status: CandidateStatus.HIRED });
+
+    return employeeProfile;
+  }
+
+  async updateCandidateStatus(candidateId: string, updateCandidateStatusDto: UpdateCandidateStatusDto): Promise<Candidate> {
+    const candidate = await this.candidateRepository.findById(candidateId);
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with ID ${candidateId} not found`);
+    }
+
+    const { status } = updateCandidateStatusDto;
+
+    const updatedCandidate = await this.candidateRepository.updateById(candidateId, { status });
+
+    if (!updatedCandidate) {
+      throw new NotFoundException(`Candidate with ID ${candidateId} not found during update`);
+    }
+
+    return updatedCandidate;
   }
 }
