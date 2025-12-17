@@ -65,7 +65,6 @@ import { LeavesModule } from '../leaves/leaves.module';
 import { PerformanceModule } from '../employee-subsystem/performance/performance.module';
 import { OrganizationStructureModule } from '../employee-subsystem/organization-structure/organization-structure.module';
 import { PayrollModule } from '../payroll/payroll.module';
-import { AtsModule } from './ats/ats.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -112,8 +111,6 @@ import { AtsModule } from './ats/ats.module';
       secret: process.env.JWT_SECRET || 'default-secret-key',
       signOptions: { expiresIn: '24h' },
     }),
-    // ATS Module
-    AtsModule,
   ],
   controllers: [
     RecruitmentController,
