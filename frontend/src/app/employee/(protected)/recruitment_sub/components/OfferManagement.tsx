@@ -70,8 +70,8 @@ export function OfferManagement() {
       setIsSubmitting(true);
       await recruitmentApi.approveOffer({
         offerId,
-        approved,
-        comments: approved ? 'Approved' : 'Rejected',
+        status: approved ? 'approved' : 'rejected',
+        comment: approved ? 'Approved' : 'Rejected',
       });
       toast.success(approved ? 'Offer approved!' : 'Offer rejected!');
       fetchOffers();

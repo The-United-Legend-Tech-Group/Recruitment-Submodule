@@ -32,9 +32,7 @@ export class HrSignContractDto {
   @IsString()
   customNationalId?: string;
 
-  @IsOptional()
-  @IsString()
-  customEmployeeNumber?: string;
+
 
   @IsOptional()
   @IsEmail()

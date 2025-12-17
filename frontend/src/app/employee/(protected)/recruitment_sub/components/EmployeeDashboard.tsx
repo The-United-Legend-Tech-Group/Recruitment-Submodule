@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { recruitmentApi, offboardingApi } from '@/lib/api';
 import { useToast } from '@/lib/hooks/useToast';
 import { InterviewFeedback } from './InterviewFeedback';
+import { MyApprovals } from './MyApprovals';
 import {
   Box,
   Stack,
@@ -36,7 +37,7 @@ import {
 } from '@mui/icons-material';
 import { AssessmentForms } from './AssessmentForms';
 import { decryptData } from '../../../../../common/utils/encryption';
-import axios from 'axios'; // Ensure axios is imported or available for blob fetching
+import axios from 'axios';
 
 export function EmployeeDashboard() {
   const toast = useToast();
@@ -44,6 +45,7 @@ export function EmployeeDashboard() {
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showInterviewFeedback, setShowInterviewFeedback] = useState(false);
   const [showAssessmentForms, setShowAssessmentForms] = useState(false);
+  const [showApprovals, setShowApprovals] = useState(false);
   const [onboardingData, setOnboardingData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [employeeId, setEmployeeId] = useState('');
@@ -307,18 +309,25 @@ export function EmployeeDashboard() {
       {/* Navigation Tabs */}
       <Paper variant="outlined" sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
-          value={showOnboarding ? 0 : showInterviewFeedback ? 1 : showAssessmentForms ? 2 : 0}
+          value={showOnboarding ? 0 : showInterviewFeedback ? 1 : showAssessmentForms ? 2 : showApprovals ? 3 : 0}
           onChange={(_, value) => {
             setShowOnboarding(value === 0);
             setShowInterviewFeedback(value === 1);
             setShowAssessmentForms(value === 2);
+            setShowApprovals(value === 3);
           }}
+          variant="scrollable"
+          scrollButtons="auto"
         >
           <Tab label="Onboarding" />
           <Tab label="Interview Feedback" />
           <Tab label="Assessments" />
+          <Tab label="Approvals" />
         </Tabs>
       </Paper>
+
+      {/* Approvals Section */}
+      {showApprovals && <MyApprovals />}
 
       {/* Interview Feedback Section */}
       {showInterviewFeedback && (
@@ -847,4 +856,3 @@ export function EmployeeDashboard() {
     </Stack>
   );
 }
-

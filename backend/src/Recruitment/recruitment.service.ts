@@ -188,18 +188,22 @@ export class RecruitmentService {
   // need guards for auth and roles
   //REC-014
   async addOfferApprover(dto: AddOfferApproverDto) {
-    const { offerId, employeeId, role } = dto;
+    const { offerId, employeeId: inputId } = dto;
+    let employeeId = inputId;
+
+    // Resolve Employee ID from Number if necessary (not a valid ObjectId)
+    if (!mongoose.isValidObjectId(inputId)) {
+      const employee = await this.employeeService.findByEmployeeNumber(inputId);
+      if (!employee) {
+        throw new NotFoundException(`Employee with number ${inputId} not found`);
+      }
+      employeeId = String((employee as any)._id || (employee as any).id);
+    }
 
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
-    /*
-        // Validate employee exists and is active
-        const isValidEmployee = await this.validateEmployeeExistence(employeeId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE, SystemRole.DEPARTMENT_HEAD, SystemRole.PAYROLL_MANAGER]);
-        if (!isValidEmployee) {
-          throw new NotFoundException(`Employee with id ${employeeId} is not valid or not active`);
-        }*/
 
     // Check if approver already exists
     const existingApprover = offer.approvers.find(
@@ -210,16 +214,38 @@ export class RecruitmentService {
       throw new BadRequestException('This employee is already an approver for this offer');
     }
 
-    // Add new approver with pending status
+    // Add new approver with pending status and default role
     offer.approvers.push({
       employeeId: new mongoose.Types.ObjectId(employeeId),
-      role,
+      role: 'Approver',
       status: 'pending',
       actionDate: null,
       comment: null,
     });
 
     await this.offerRepository.updateById(offerId, { approvers: offer.approvers });
+
+    // Notify the new approver
+    try {
+      await this.notificationService.create({
+        recipientId: [employeeId],
+        type: 'Info',
+        deliveryType: 'UNICAST',
+        title: 'Offer Approval Request',
+        message: `You have been added as an approver for offer ${offerId}.`,
+        relatedModule: 'Recruitment',
+        isRead: false,
+      });
+    } catch (e) {
+      console.warn('Failed to send notification to new approver', e);
+    }
+    try {
+      await this.offerRepository.updateById(offerId, {
+        finalStatus: OfferFinalStatus.PENDING
+      });
+    } catch (e) {
+      console.warn('Failed to update offer final status', e);
+    }
 
     return {
       success: true,
@@ -268,6 +294,8 @@ export class RecruitmentService {
 
     if (anyRejected) {
       offer.finalStatus = OfferFinalStatus.REJECTED;
+    } else if (allApproved) {
+      offer.finalStatus = OfferFinalStatus.APPROVED;
     }
 
     await this.offerRepository.updateById(offerId, {
@@ -561,7 +589,7 @@ export class RecruitmentService {
           firstName: dto.customFirstName || candidate.firstName || 'New',
           lastName: dto.customLastName || candidate.lastName || 'Employee',
           nationalId: dto.customNationalId || candidate.nationalId,
-          employeeNumber: dto.customEmployeeNumber || `EMP-${candidate.candidateNumber.slice(4)}`,
+          employeeNumber: `EMP-${candidate.candidateNumber.slice(4)}`,
           dateOfHire: new Date(),
           workEmail: dto.customWorkEmail || candidate.personalEmail,
           personalEmail: dto.customPersonalEmail || candidate.personalEmail || dto.customWorkEmail,
@@ -626,6 +654,7 @@ export class RecruitmentService {
         includeITTasks: true,
         includeAdminTasks: true,
         includeHRTasks: true,
+        employeeNumber: employeeData.employeeNumber,
       });
 
       // Send notification to new employee with their employee details
@@ -661,7 +690,8 @@ export class RecruitmentService {
       if (updatedContract.signingBonus && updatedContract.signingBonus > 0 && updatedContract.role) {
         await this.processSigningBonusForNewHire(
           employeeProfileId,
-          updatedContract.role
+          updatedContract.role,
+          employeeData.employeeNumber
         );
       }
 
@@ -691,7 +721,7 @@ export class RecruitmentService {
    * Process signing bonus for new hire after contract is fully signed
    * ONB-019: Automatically create employee signing bonus record
    */
-  async processSigningBonusForNewHire(employeeId: string, positionName: string): Promise<void> {
+  async processSigningBonusForNewHire(employeeId: string, positionName: string, employeeNumber?: string): Promise<void> {
     try {
       // Create employee signing bonus record using the payroll execution service
       await this.employeeSigningBonusService.createEmployeeSigningBonus({
@@ -706,7 +736,7 @@ export class RecruitmentService {
         deliveryType: 'BROADCAST',
         deliverToRole: SystemRole.HR_MANAGER,
         title: 'Signing Bonus Record Created',
-        message: `Signing bonus record has been automatically created for employee ${employeeId} for position ${positionName}. Status: Pending approval.`,
+        message: `Signing bonus record has been automatically created for employee ${employeeNumber || employeeId} for position ${positionName}. Status: Pending approval.`,
         relatedModule: 'Recruitment',
         isRead: false,
       });
@@ -719,7 +749,7 @@ export class RecruitmentService {
         deliveryType: 'BROADCAST',
         deliverToRole: SystemRole.HR_MANAGER,
         title: 'Signing Bonus Processing Failed',
-        message: `Failed to create signing bonus record for employee ${employeeId}. Position: ${positionName}. Please create manually. Error: ${error.message || 'Unknown error'}`,
+        message: `Failed to create signing bonus record for employee ${employeeNumber || employeeId}. Position: ${positionName}. Please create manually. Error: ${error.message || 'Unknown error'}`,
         relatedModule: 'Recruitment',
         isRead: false,
       });
@@ -1075,7 +1105,7 @@ export class RecruitmentService {
   //ONB-012
   //ONB-013
   async createOnboardingWithDefaults(dto: CreateOnboardingWithDefaultsDto) {
-    const { employeeId, contractId, startDate, includeITTasks = true, includeAdminTasks = true, includeHRTasks = true } = dto;
+    const { employeeId, contractId, startDate, includeITTasks = true, includeAdminTasks = true, includeHRTasks = true, employeeNumber } = dto;
 
     const deadline = startDate ? new Date(startDate) : new Date();
     const tasks: any[] = [];
@@ -1201,7 +1231,7 @@ export class RecruitmentService {
         deliveryType: 'BROADCAST',
         deliverToRole: SystemRole.SYSTEM_ADMIN,
         title: 'New Employee Onboarding Tasks Assigned',
-        message: `New onboarding tasks have been created for employee ${employeeId}. Tasks: ${tasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${itAdminTaskCount}.`,
+        message: `New onboarding tasks have been created for employee ${employeeNumber || employeeId}. Tasks: ${tasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${itAdminTaskCount}.`,
         relatedModule: 'Recruitment',
         isRead: false,
       });
@@ -2242,19 +2272,80 @@ export class RecruitmentService {
     return await this.offerRepository.find();
   }
 
-  // Get offer by ID with populated data
-  async getOfferById(offerId: string): Promise<OfferDocument> {
+  // Get offer by ID with manually populated data to avoid schema issues and fix 500 errors
+  async getOfferById(offerId: string): Promise<any> {
     const offer = await this.offerRepository.findById(offerId);
     if (!offer) {
       throw new NotFoundException(`Offer with id ${offerId} not found`);
     }
 
-    return offer;
+    const offerObj = offer.toObject() as any;
+
+    // Manually populate candidate to ensure data availability and handle email mapping
+    if (offer.candidateId) {
+      try {
+        const candidate = await this.candidateRepository.findById(offer.candidateId.toString());
+        if (candidate) {
+          offerObj.candidateId = {
+            ...candidate.toObject(),
+            _id: candidate._id,
+            firstName: candidate.firstName,
+            lastName: candidate.lastName,
+            // Map personalEmail to email as frontend expects 'email'
+            email: candidate.personalEmail || (candidate as any).email || 'N/A'
+          };
+        }
+      } catch (e) {
+        console.warn('Failed to manually populate candidate for offer', e);
+      }
+    }
+
+    // Manually populate approvers
+    if (offerObj.approvers && offerObj.approvers.length > 0) {
+      for (const approver of offerObj.approvers) {
+        if (approver.employeeId) {
+          try {
+            const employee = await this.employeeService.findById(approver.employeeId.toString());
+            if (employee) {
+              // Handle mongoose document or plain object
+              const empObj = (employee as any).toObject ? (employee as any).toObject() : employee;
+
+              // Debug logging
+              console.log('Employee object for approver:', {
+                id: empObj._id,
+                workEmail: empObj.workEmail,
+                personalEmail: empObj.personalEmail,
+                firstName: empObj.firstName,
+                lastName: empObj.lastName
+              });
+
+              // Flatten details for frontend convenience
+              // Handle empty strings by using || operator which treats '' as falsy
+              const email = empObj.workEmail || empObj.personalEmail || 'N/A';
+              approver.email = email;
+              approver.firstName = empObj.firstName || 'Unknown';
+              approver.lastName = empObj.lastName || 'User';
+              approver.name = `${empObj.firstName || 'Unknown'} ${empObj.lastName || 'User'}`;
+              // Also point employeeId to the object for reference
+              approver.employeeId = empObj;
+            }
+          } catch (e) {
+            console.warn(`Failed to populate approver ${approver.employeeId}`, e);
+          }
+        }
+      }
+    }
+
+    return offerObj;
   }
 
   // Get offers by candidate ID
   async getOffersByCandidateId(candidateId: string): Promise<OfferDocument[]> {
-    return await this.offerRepository.find({ candidateId: new mongoose.Types.ObjectId(candidateId) });
+    // Filter to show only 'sent' offers (which means they are ready for candidate checks)
+    return await this.offerRepository.find({
+      candidateId: new mongoose.Types.ObjectId(candidateId),
+      finalStatus: 'sent'
+    });
   }
 
   // Get all contracts
@@ -2276,6 +2367,55 @@ export class RecruitmentService {
 
     // Find all contracts that reference these offers
     return await this.contractRepository.findByOfferIds(offerIds);
+  }
+
+  // Get offers where I am an approver
+  async getMyApprovals(employeeId: string): Promise<any[]> {
+    const offers = await this.offerRepository.find({
+      'approvers.employeeId': new mongoose.Types.ObjectId(employeeId)
+    });
+
+    // Populate candidate and approver details manually
+    return await Promise.all(offers.map(async (offer) => {
+      const offerObj = offer.toObject() as any;
+
+      // Populate Candidate
+      if (offer.candidateId) {
+        try {
+          const candidate = await this.candidateRepository.findById(offer.candidateId.toString());
+          if (candidate) {
+            offerObj.candidateId = {
+              ...candidate.toObject(),
+              firstName: candidate.firstName,
+              lastName: candidate.lastName,
+              email: candidate.personalEmail || (candidate as any).email || 'N/A'
+            };
+          }
+        } catch (e) { console.warn('Failed to populate candidate', e); }
+      }
+
+      // Populate Approvers
+      if (offerObj.approvers) {
+        for (const approver of offerObj.approvers) {
+          if (approver.employeeId) {
+            try {
+              const employee = await this.employeeService.findById(approver.employeeId.toString());
+              if (employee) {
+                const empObj = (employee as any).toObject ? (employee as any).toObject() : employee;
+                // Handle empty strings by using || operator which treats '' as falsy
+                const email = empObj.workEmail || empObj.personalEmail || 'N/A';
+                approver.email = email;
+                approver.firstName = empObj.firstName || 'Unknown';
+                approver.lastName = empObj.lastName || 'User';
+                approver.name = `${empObj.firstName || 'Unknown'} ${empObj.lastName || 'User'}`;
+                approver.employeeId = empObj;
+              }
+            } catch (e) { }
+          }
+        }
+      }
+      return offerObj;
+    }));
   }
 
   async submitAssessment(assessmentId: string, createAssessmentDto: CreateAssessmentDto, interviewerId: string): Promise<AssessmentResultDocument> {

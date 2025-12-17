@@ -99,6 +99,13 @@ export class RecruitmentController {
     return this.recruitmentService.candidateRespondOffer(dto, req.user.sub);
   }
 
+  @Get('offer/approvals/my')
+  // @Roles(SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.DEPARTMENT_HEAD)
+  async getMyApprovals(@Req() req: any) {
+    const userId = req.user?.employeeId || req.user?.sub;
+    return this.recruitmentService.getMyApprovals(userId);
+  }
+
   @Get('contracts')
   // @Roles(SystemRole.HR_EMPLOYEE, SystemRole.HR_MANAGER)
   async getAllContracts() {

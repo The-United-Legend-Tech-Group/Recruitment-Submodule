@@ -698,4 +698,8 @@ export class EmployeeService {
   async findByEmployeeNumber(employeeNumber: string): Promise<EmployeeProfile | null> {
     return this.employeeProfileRepository.findOne({ employeeNumber: employeeNumber });
   }
+
+  async findById(id: string): Promise<EmployeeProfile | null> {
+    return this.employeeProfileRepository.findById(id);
+  }
 }

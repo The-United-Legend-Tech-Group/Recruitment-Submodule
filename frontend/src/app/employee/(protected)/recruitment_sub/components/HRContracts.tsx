@@ -59,7 +59,6 @@ export default function HRContracts() {
     customFirstName: '',
     customLastName: '',
     customNationalId: '',
-    customEmployeeNumber: '',
     customWorkEmail: '',
     customPersonalEmail: '',
     customStatus: 'PROBATION',
@@ -98,7 +97,7 @@ export default function HRContracts() {
         signData.customFirstName = customData.customFirstName || undefined;
         signData.customLastName = customData.customLastName || undefined;
         signData.customNationalId = customData.customNationalId || undefined;
-        signData.customEmployeeNumber = customData.customEmployeeNumber || undefined;
+
         signData.customWorkEmail = customData.customWorkEmail || undefined;
         signData.customPersonalEmail = customData.customPersonalEmail || undefined;
         signData.customStatus = customData.customStatus || undefined;
@@ -115,7 +114,6 @@ export default function HRContracts() {
         customFirstName: '',
         customLastName: '',
         customNationalId: '',
-        customEmployeeNumber: '',
         customWorkEmail: '',
         customPersonalEmail: '',
         customStatus: 'PROBATION',
@@ -384,13 +382,7 @@ export default function HRContracts() {
                         placeholder="Leave empty to use candidate data"
                       />
 
-                      <TextField
-                        label="Employee Number"
-                        size="small"
-                        value={customData.customEmployeeNumber}
-                        onChange={(e) => setCustomData({ ...customData, customEmployeeNumber: e.target.value })}
-                        placeholder="e.g., EMP-2025-001"
-                      />
+
 
                       <TextField
                         label="Work Email"

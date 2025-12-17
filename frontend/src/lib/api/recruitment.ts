@@ -21,8 +21,8 @@ export interface AddOfferApproverDto {
 
 export interface ApproveOfferDto {
   offerId: string;
-  approved: boolean;
-  comments?: string;
+  status: 'approved' | 'rejected';
+  comment?: string;
 }
 
 export interface SendOfferDto {
@@ -210,6 +210,9 @@ export const recruitmentApi = {
 
   // Get offer by ID
   getOfferById: (offerId: string) => api.get(`/recruitment/offer/${offerId}`),
+
+  // Get my pending approvals
+  getMyApprovals: () => api.get('/recruitment/offer/approvals/my'),
 
   addOfferApprover: (data: AddOfferApproverDto) => {
     return api.post('/recruitment/offer/add-approver', data);

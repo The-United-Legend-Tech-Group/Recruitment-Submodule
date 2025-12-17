@@ -108,7 +108,7 @@ export function OffersAndApprovals() {
         ...prev,
         applicationId,
         candidateId: selectedApp.candidateId?._id || selectedApp.candidateId,
-        role: selectedApp.requisitionId?.title || '',
+        role: selectedApp.requisitionId?.templateId?.title || selectedApp.requisitionId?.title || '',
       }));
     }
   };
@@ -169,7 +169,7 @@ export function OffersAndApprovals() {
 
   const handleAddApprover = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedOffer || !approverData.employeeId || !approverData.role) {
+    if (!selectedOffer || !approverData.employeeId) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -207,10 +207,6 @@ export function OffersAndApprovals() {
   };
 
   const handleSendOffer = async (offer: any) => {
-    if (!confirm(`Are you sure you want to send this offer to ${offer.candidateId?.firstName} ${offer.candidateId?.lastName}?`)) {
-      return;
-    }
-
     try {
       setIsSubmitting(true);
       await recruitmentApi.sendOffer({
@@ -399,7 +395,7 @@ export function OffersAndApprovals() {
                   {applications.map((app) => (
                     <MenuItem key={app._id} value={app._id}>
                       {app.candidateId?.firstName || ''} {app.candidateId?.lastName || ''} -{' '}
-                      {app.requisitionId?.title || 'N/A'}
+                      {app.requisitionId?.templateId?.title || app.requisitionId?.title || 'N/A'}
                     </MenuItem>
                   ))}
                 </Select>
@@ -569,29 +565,12 @@ export function OffersAndApprovals() {
                 <TextField
                   fullWidth
                   required
-                  label="Employee ID"
+                  label="Employee Number"
                   value={approverData.employeeId}
                   onChange={(e) => setApproverData({ ...approverData, employeeId: e.target.value })}
-                  placeholder="Enter employee MongoDB ObjectId"
-                  helperText="Example: 673a1234567890abcdef5678"
+                  placeholder="Enter employee number (e.g. EMP-123)"
+                  helperText="Enter the employee number"
                 />
-
-                <FormControl fullWidth required>
-                  <InputLabel>Approver Role *</InputLabel>
-                  <Select
-                    value={approverData.role}
-                    onChange={(e) => setApproverData({ ...approverData, role: e.target.value })}
-                    label="Approver Role *"
-                  >
-                    <MenuItem value="">Select role...</MenuItem>
-                    <MenuItem value="Hiring Manager">Hiring Manager</MenuItem>
-                    <MenuItem value="Department Head">Department Head</MenuItem>
-                    <MenuItem value="Finance Director">Finance Director</MenuItem>
-                    <MenuItem value="HR Manager">HR Manager</MenuItem>
-                    <MenuItem value="CEO">CEO</MenuItem>
-                    <MenuItem value="Payroll Manager">Payroll Manager</MenuItem>
-                  </Select>
-                </FormControl>
               </Stack>
             </>
           )}
@@ -727,7 +706,7 @@ export function OffersAndApprovals() {
                                 <Chip label={approver.role} size="small" sx={{ height: 20 }} />
                               </Stack>
                               <Typography variant="caption" color="text.secondary">
-                                {approver.employeeId?.email || 'No email'}
+                                {approver.employeeId?.workEmail || 'No email'}
                               </Typography>
                               {approver.comment && (
                                 <Typography variant="caption" color="text.secondary" display="block" mt={1} fontStyle="italic">
