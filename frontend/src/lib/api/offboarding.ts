@@ -126,6 +126,10 @@ export const offboardingApi = {
     return api.post('/offboarding/revoke-access', data);
   },
 
+  getEmployeesReadyForRevocation: () => {
+    return api.get('/offboarding/employees-ready-for-revocation');
+  },
+
   // =================== RESIGNATION ENDPOINTS ===================
 
   submitResignation: (data: SubmitResignationDto) => {
