@@ -2,13 +2,7 @@ import { IsNotEmpty, IsString, IsNumber, Min, Max, IsOptional } from 'class-vali
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAssessmentDto {
-    @ApiProperty({
-        description: 'ID of the interviewer providing the assessment',
-        example: '507f1f77bcf86cd799439012',
-    })
-    @IsNotEmpty()
-    @IsString()
-    interviewerId: string;
+
 
     @ApiProperty({
         description: 'Assessment score for the candidate (1-10)',
