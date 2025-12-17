@@ -1,0 +1,69 @@
+import api from '@/lib/axios';
+
+// Employee interfaces
+export interface Employee {
+    _id: string;
+    employeeNumber: string;
+    fullName: {
+        firstName: string;
+        middleName?: string;
+        lastName: string;
+    };
+    personalEmail: string;
+    companyEmail?: string;
+    phoneNumber: string;
+    nationalId: string;
+    department?: {
+        _id: string;
+        name: string;
+    };
+    position?: {
+        _id: string;
+        title: string;
+    };
+    hireDate: string;
+    status: 'ACTIVE' | 'INACTIVE' | 'ON_LEAVE' | 'TERMINATED';
+    roles: string[];
+}
+
+// Candidate interfaces
+export interface Candidate {
+    _id: string;
+    candidateNumber: string;
+    fullName: {
+        firstName: string;
+        middleName?: string;
+        lastName: string;
+    };
+    personalEmail: string;
+    phoneNumber: string;
+    nationalId: string;
+    status: 'ACTIVE' | 'HIRED' | 'REJECTED' | 'WITHDRAWN';
+}
+
+// Employee API methods
+export const employeeApi = {
+    // Get single employee by ID
+    async getEmployeebyId(id: string): Promise<Employee> {
+        const response = await api.get(`/employee/${id}`);
+        return response.data;
+    },
+};
+export const candidateApi = {
+    // Get candidate by ID (MongoDB ObjectId)
+    async getCandidateById(candidateId: string): Promise<Candidate> {
+        // This endpoint needs to be added to the backend
+        // Possible endpoint: GET /employee/candidate/id/:candidateId
+        const response = await api.get(`/employee/candidate/id/${candidateId}`);
+        return response.data;
+    },
+    // Get all candidates
+    async getAllCandidates(): Promise<Candidate[]> {
+        // This endpoint needs to be added to the backend
+        // Possible endpoint: GET /employee/candidates
+        const response = await api.get('/employee/candidates');
+        return response.data;
+    },
+};
+
+export default employeeApi;
