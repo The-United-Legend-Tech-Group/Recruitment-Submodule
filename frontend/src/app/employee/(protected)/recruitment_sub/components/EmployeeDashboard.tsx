@@ -508,351 +508,359 @@ export function EmployeeDashboard() {
       )}
 
       {/* Document Upload */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Document Upload
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Upload required documents to complete your onboarding
-          </Typography>
+      {showOnboarding && (
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Document Upload
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Upload required documents to complete your onboarding
+            </Typography>
 
-          <Stack spacing={3}>
-            {/* Government ID */}
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Government-issued ID
-              </Typography>
+            <Stack spacing={3}>
+              {/* Government ID */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Government-issued ID
+                </Typography>
 
-              <Stack spacing={1} sx={{ mb: 2 }}>
-                {fetchedDocuments.filter((d: any) => d.type === 'id').map((doc: any) => (
-                  <Paper key={doc._id} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <FileTextIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2">{doc.filePath.split(/[/\\]/).pop()}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                    <Button
-                      size="small"
-                      startIcon={<ViewIcon />}
-                      onClick={() => handleViewDocument(doc._id)}
-                      sx={{ ml: 2 }}
-                    >
-                      View
-                    </Button>
-                  </Paper>
-                ))}
-              </Stack>
+                <Stack spacing={1} sx={{ mb: 2 }}>
+                  {fetchedDocuments.filter((d: any) => d.type === 'id').map((doc: any) => (
+                    <Paper key={doc._id} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <FileTextIcon color="primary" />
+                        <Box>
+                          <Typography variant="body2">{doc.filePath.split(/[/\\]/).pop()}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Button
+                        size="small"
+                        startIcon={<ViewIcon />}
+                        onClick={() => handleViewDocument(doc._id)}
+                        sx={{ ml: 2 }}
+                      >
+                        View
+                      </Button>
+                    </Paper>
+                  ))}
+                </Stack>
 
-              <input
-                type="file"
-                id="governmentId-upload"
-                accept="application/pdf,image/jpeg,image/jpg,image/png"
-                style={{ display: 'none' }}
-                onChange={(e) => handleFileUpload(e, 'governmentId')}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => document.getElementById('governmentId-upload')?.click()}
-                fullWidth
-                sx={{
-                  borderStyle: 'dashed',
-                  py: 2,
-                  color: 'text.secondary',
-                  borderColor: 'grey.300',
-                  '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
-                }}
-              >
-                Add Document
-              </Button>
-            </Box>
+                <input
+                  type="file"
+                  id="governmentId-upload"
+                  accept="application/pdf,image/jpeg,image/jpg,image/png"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFileUpload(e, 'governmentId')}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => document.getElementById('governmentId-upload')?.click()}
+                  fullWidth
+                  sx={{
+                    borderStyle: 'dashed',
+                    py: 2,
+                    color: 'text.secondary',
+                    borderColor: 'grey.300',
+                    '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
+                  }}
+                >
+                  Add Document
+                </Button>
+              </Box>
 
-            {/* Employment Contract */}
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Signed Employment Contract
-              </Typography>
+              {/* Employment Contract */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Signed Employment Contract
+                </Typography>
 
-              <Stack spacing={1} sx={{ mb: 2 }}>
-                {fetchedDocuments.filter((d: any) => d.type === 'contract').map((doc: any) => (
-                  <Paper key={doc._id} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <FileTextIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2">{doc.filePath.split(/[/\\]/).pop()}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                    <Button
-                      size="small"
-                      startIcon={<ViewIcon />}
-                      onClick={() => handleViewDocument(doc._id)}
-                      sx={{ ml: 2 }}
-                    >
-                      View
-                    </Button>
-                  </Paper>
-                ))}
-              </Stack>
+                <Stack spacing={1} sx={{ mb: 2 }}>
+                  {fetchedDocuments.filter((d: any) => d.type === 'contract').map((doc: any) => (
+                    <Paper key={doc._id} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <FileTextIcon color="primary" />
+                        <Box>
+                          <Typography variant="body2">{doc.filePath.split(/[/\\]/).pop()}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Button
+                        size="small"
+                        startIcon={<ViewIcon />}
+                        onClick={() => handleViewDocument(doc._id)}
+                        sx={{ ml: 2 }}
+                      >
+                        View
+                      </Button>
+                    </Paper>
+                  ))}
+                </Stack>
 
-              <input
-                type="file"
-                id="employmentContract-upload"
-                accept="application/pdf"
-                style={{ display: 'none' }}
-                onChange={(e) => handleFileUpload(e, 'employmentContract')}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => document.getElementById('employmentContract-upload')?.click()}
-                fullWidth
-                sx={{
-                  borderStyle: 'dashed',
-                  py: 2,
-                  color: 'text.secondary',
-                  borderColor: 'grey.300',
-                  '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
-                }}
-              >
-                Add Document
-              </Button>
-            </Box>
+                <input
+                  type="file"
+                  id="employmentContract-upload"
+                  accept="application/pdf"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFileUpload(e, 'employmentContract')}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => document.getElementById('employmentContract-upload')?.click()}
+                  fullWidth
+                  sx={{
+                    borderStyle: 'dashed',
+                    py: 2,
+                    color: 'text.secondary',
+                    borderColor: 'grey.300',
+                    '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
+                  }}
+                >
+                  Add Document
+                </Button>
+              </Box>
 
-            {/* Certifications */}
-            <Box>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Professional Certifications
-              </Typography>
+              {/* Certifications */}
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Professional Certifications
+                </Typography>
 
-              <Stack spacing={1} sx={{ mb: 2 }}>
-                {fetchedDocuments.filter((d: any) => d.type === 'certificate').map((doc: any) => (
-                  <Paper key={doc._id} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Stack direction="row" spacing={2} alignItems="center">
-                      <FileTextIcon color="primary" />
-                      <Box>
-                        <Typography variant="body2">{doc.filePath.split(/[/\\]/).pop()}</Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
-                        </Typography>
-                      </Box>
-                    </Stack>
-                    <Button
-                      size="small"
-                      startIcon={<ViewIcon />}
-                      onClick={() => handleViewDocument(doc._id)}
-                      sx={{ ml: 2 }}
-                    >
-                      View
-                    </Button>
-                  </Paper>
-                ))}
-              </Stack>
+                <Stack spacing={1} sx={{ mb: 2 }}>
+                  {fetchedDocuments.filter((d: any) => d.type === 'certificate').map((doc: any) => (
+                    <Paper key={doc._id} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <FileTextIcon color="primary" />
+                        <Box>
+                          <Typography variant="body2">{doc.filePath.split(/[/\\]/).pop()}</Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Uploaded on {new Date(doc.createdAt).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <Button
+                        size="small"
+                        startIcon={<ViewIcon />}
+                        onClick={() => handleViewDocument(doc._id)}
+                        sx={{ ml: 2 }}
+                      >
+                        View
+                      </Button>
+                    </Paper>
+                  ))}
+                </Stack>
 
-              <input
-                type="file"
-                id="certifications-upload"
-                accept="application/pdf,image/jpeg,image/jpg,image/png"
-                style={{ display: 'none' }}
-                onChange={(e) => handleFileUpload(e, 'certifications')}
-              />
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={() => document.getElementById('certifications-upload')?.click()}
-                fullWidth
-                sx={{
-                  borderStyle: 'dashed',
-                  py: 2,
-                  color: 'text.secondary',
-                  borderColor: 'grey.300',
-                  '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
-                }}
-              >
-                Add Document
-              </Button>
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
+                <input
+                  type="file"
+                  id="certifications-upload"
+                  accept="application/pdf,image/jpeg,image/jpg,image/png"
+                  style={{ display: 'none' }}
+                  onChange={(e) => handleFileUpload(e, 'certifications')}
+                />
+                <Button
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => document.getElementById('certifications-upload')?.click()}
+                  fullWidth
+                  sx={{
+                    borderStyle: 'dashed',
+                    py: 2,
+                    color: 'text.secondary',
+                    borderColor: 'grey.300',
+                    '&:hover': { borderColor: 'primary.main', color: 'primary.main' }
+                  }}
+                >
+                  Add Document
+                </Button>
+              </Box>
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Resignation Request */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            Resignation Request
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            Submit a resignation request if you wish to leave the company
-          </Typography>
+      {showOnboarding && (
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              Resignation Request
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              Submit a resignation request if you wish to leave the company
+            </Typography>
 
-          {!showResignationForm ? (
-            <Button
-              variant="contained"
-              color="error"
-              onClick={() => setShowResignationForm(true)}
-            >
-              Submit Resignation Request
-            </Button>
-          ) : (
-            <Box component="form" onSubmit={handleSubmitResignation}>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1 }}>Proposed Last Working Date</Typography>
-                  <TextField
-                    type="date"
-                    value={resignationData.proposedLastWorkingDay}
-                    onChange={(e) => setResignationData({ ...resignationData, proposedLastWorkingDay: e.target.value })}
-                    fullWidth
-                    helperText="Optional"
-                    variant="outlined"
-                    InputLabelProps={{ shrink: true }}
-                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
-                  />
-                </Box>
+            {!showResignationForm ? (
+              <Button
+                variant="contained"
+                color="error"
+                onClick={() => setShowResignationForm(true)}
+              >
+                Submit Resignation Request
+              </Button>
+            ) : (
+              <Box component="form" onSubmit={handleSubmitResignation}>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>Proposed Last Working Date</Typography>
+                    <TextField
+                      type="date"
+                      value={resignationData.proposedLastWorkingDay}
+                      onChange={(e) => setResignationData({ ...resignationData, proposedLastWorkingDay: e.target.value })}
+                      fullWidth
+                      helperText="Optional"
+                      variant="outlined"
+                      InputLabelProps={{ shrink: true }}
+                      sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                    />
+                  </Box>
 
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1 }}>Reason for Resignation</Typography>
-                  <TextField
-                    multiline
-                    rows={1}
-                    required
-                    value={resignationData.reason}
-                    onChange={(e) => setResignationData({ ...resignationData, reason: e.target.value })}
-                    placeholder="Please provide a detailed reason for your resignation (minimum 20 characters)..."
-                    fullWidth
-                    helperText={`${resignationData.reason.length} / 20 characters (Required)`}
-                    error={resignationData.reason.length > 0 && resignationData.reason.length < 20}
-                    variant="outlined"
-                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
-                  />
-                </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>Reason for Resignation</Typography>
+                    <TextField
+                      multiline
+                      rows={1}
+                      required
+                      value={resignationData.reason}
+                      onChange={(e) => setResignationData({ ...resignationData, reason: e.target.value })}
+                      placeholder="Please provide a detailed reason for your resignation (minimum 20 characters)..."
+                      fullWidth
+                      helperText={`${resignationData.reason.length} / 20 characters (Required)`}
+                      error={resignationData.reason.length > 0 && resignationData.reason.length < 20}
+                      variant="outlined"
+                      sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
+                    />
+                  </Box>
 
-                <Box>
-                  <Typography variant="body2" sx={{ mb: 1 }}>Additional Comments</Typography>
-                  <TextField
-                    multiline
-                    rows={1}
-                    value={resignationData.employeeComments}
-                    onChange={(e) => setResignationData({ ...resignationData, employeeComments: e.target.value })}
-                    placeholder="Any additional comments or feedback..."
-                    fullWidth
-                    helperText="Optional"
-                    variant="outlined"
-                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
-                  />
-                </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>Additional Comments</Typography>
+                    <TextField
+                      multiline
+                      rows={1}
+                      value={resignationData.employeeComments}
+                      onChange={(e) => setResignationData({ ...resignationData, employeeComments: e.target.value })}
+                      placeholder="Any additional comments or feedback..."
+                      fullWidth
+                      helperText="Optional"
+                      variant="outlined"
+                      sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
+                    />
+                  </Box>
 
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    onClick={() => {
-                      setShowResignationForm(false);
-                      setResignationData({ reason: '', employeeComments: '', proposedLastWorkingDay: '' });
-                    }}
-                    disabled={isSubmittingResignation}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="error"
-                    fullWidth
-                    disabled={isSubmittingResignation || resignationData.reason.length < 20}
-                    startIcon={isSubmittingResignation ? <CircularProgress size={16} /> : null}
-                  >
-                    {isSubmittingResignation ? 'Submitting...' : 'Submit Request'}
-                  </Button>
+                  <Stack direction="row" spacing={2}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={() => {
+                        setShowResignationForm(false);
+                        setResignationData({ reason: '', employeeComments: '', proposedLastWorkingDay: '' });
+                      }}
+                      disabled={isSubmittingResignation}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="error"
+                      fullWidth
+                      disabled={isSubmittingResignation || resignationData.reason.length < 20}
+                      startIcon={isSubmittingResignation ? <CircularProgress size={16} /> : null}
+                    >
+                      {isSubmittingResignation ? 'Submitting...' : 'Submit Request'}
+                    </Button>
+                  </Stack>
                 </Stack>
-              </Stack>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Resignation Status */}
-      <Card variant="outlined">
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            My Resignation Requests
-          </Typography>
-          <Stack spacing={1.5}>
-            {resignationStatus.length === 0 ? (
-              <Box sx={{ textAlign: 'center', py: 4 }}>
-                <Typography color="text.secondary">No resignation requests found</Typography>
-              </Box>
-            ) : (
-              resignationStatus.map((request, index) => {
-                const statusColors: Record<string, 'warning' | 'success' | 'error' | 'default'> = {
-                  pending: 'warning',
-                  approved: 'success',
-                  rejected: 'error',
-                };
-                const statusText = request.status || 'pending';
+      {showOnboarding && (
+        <Card variant="outlined">
+          <CardContent>
+            <Typography variant="h6" gutterBottom>
+              My Resignation Requests
+            </Typography>
+            <Stack spacing={1.5}>
+              {resignationStatus.length === 0 ? (
+                <Box sx={{ textAlign: 'center', py: 4 }}>
+                  <Typography color="text.secondary">No resignation requests found</Typography>
+                </Box>
+              ) : (
+                resignationStatus.map((request, index) => {
+                  const statusColors: Record<string, 'warning' | 'success' | 'error' | 'default'> = {
+                    pending: 'warning',
+                    approved: 'success',
+                    rejected: 'error',
+                  };
+                  const statusText = request.status || 'pending';
 
-                return (
-                  <Paper key={index} variant="outlined" sx={{ p: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
-                      <Box>
-                        <Typography variant="body2">
-                          Submitted on {new Date(request.createdAt || request.initiatedDate).toLocaleDateString()}
-                        </Typography>
-                        {request.effectiveDate && (
-                          <Typography variant="body2" color="text.secondary">
-                            Effective date: {new Date(request.effectiveDate).toLocaleDateString()}
+                  return (
+                    <Paper key={index} variant="outlined" sx={{ p: 2 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1 }}>
+                        <Box>
+                          <Typography variant="body2">
+                            Submitted on {new Date(request.createdAt || request.initiatedDate).toLocaleDateString()}
                           </Typography>
-                        )}
-                      </Box>
-                      <Chip
-                        label={statusText}
-                        color={statusColors[statusText] || 'default'}
-                        size="small"
-                        sx={{ textTransform: 'capitalize' }}
-                      />
-                    </Stack>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
-                      <strong>Reason:</strong> {request.reason}
-                    </Typography>
-                    {request.employeeComments && (
-                      <Typography variant="body2" color="text.secondary">
-                        <strong>Comments:</strong> {request.employeeComments}
+                          {request.effectiveDate && (
+                            <Typography variant="body2" color="text.secondary">
+                              Effective date: {new Date(request.effectiveDate).toLocaleDateString()}
+                            </Typography>
+                          )}
+                        </Box>
+                        <Chip
+                          label={statusText}
+                          color={statusColors[statusText] || 'default'}
+                          size="small"
+                          sx={{ textTransform: 'capitalize' }}
+                        />
+                      </Stack>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+                        <strong>Reason:</strong> {request.reason}
                       </Typography>
-                    )}
-                  </Paper>
-                );
-              })
-            )}
-          </Stack>
-        </CardContent>
-      </Card>
+                      {request.employeeComments && (
+                        <Typography variant="body2" color="text.secondary">
+                          <strong>Comments:</strong> {request.employeeComments}
+                        </Typography>
+                      )}
+                    </Paper>
+                  );
+                })
+              )}
+            </Stack>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Important Reminders */}
-      <Alert severity="info" variant="outlined" icon={<AlertCircleIcon />}>
-        <AlertTitle>Important Reminders</AlertTitle>
-        <List dense>
-          <ListItem disablePadding>
-            <ListItemText primary="Complete all onboarding tasks before your start date" />
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemText primary="Upload all required documents within 48 hours" />
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemText primary="Review the employee handbook in your dashboard" />
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemText primary="Set up your email and system access on Day 1" />
-          </ListItem>
-        </List>
-      </Alert>
+      {showOnboarding && (
+        <Alert severity="info" variant="outlined" icon={<AlertCircleIcon />}>
+          <AlertTitle>Important Reminders</AlertTitle>
+          <List dense>
+            <ListItem disablePadding>
+              <ListItemText primary="Complete all onboarding tasks before your start date" />
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemText primary="Upload all required documents within 48 hours" />
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemText primary="Review the employee handbook in your dashboard" />
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemText primary="Set up your email and system access on Day 1" />
+            </ListItem>
+          </List>
+        </Alert>
+      )}
     </Stack>
   );
 }
