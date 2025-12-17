@@ -29,6 +29,8 @@ import {
 
 export function SystemAdminDashboard() {
   const [activeTab, setActiveTab] = useState<'provisioning' | 'revocation'>('provisioning');
+  const [employeesReadyForRevocation, setEmployeesReadyForRevocation] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
 
   const pendingProvisioning = [
     {
@@ -49,10 +51,43 @@ export function SystemAdminDashboard() {
     },
   ];
 
+  useEffect(() => {
+    if (activeTab === 'revocation') {
+      fetchEmployeesReadyForRevocation();
+    }
+  }, [activeTab]);
+
+  const fetchEmployeesReadyForRevocation = async () => {
+    try {
+      setLoading(true);
+      const response = await offboardingApi.getEmployeesReadyForRevocation();
+      setEmployeesReadyForRevocation(response.data || []);
+    } catch (error: any) {
+      console.error('Failed to fetch employees ready for revocation:', error);
+      toast.error(error.response?.data?.message || 'Failed to load employees');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRevokeAccess = async (terminationRequestId: string, employeeName: string) => {
+    try {
+      await offboardingApi.revokeSystemAccess({
+        terminationRequestId,
+        revocationReason: 'All clearance requirements completed - system admin revoked access',
+      });
+      toast.success(`System access revoked successfully for ${employeeName}`);
+      fetchEmployeesReadyForRevocation();
+    } catch (error: any) {
+      console.error('Failed to revoke access:', error);
+      toast.error(error.response?.data?.message || 'Failed to revoke system access');
+    }
+  };
+
   const systemStats = [
     { label: 'Active Users', value: '248', icon: UserCheckIcon, color: '#10b981' },
     { label: 'Pending Provisioning', value: '5', icon: KeyIcon, color: '#3b82f6' },
-    { label: 'Pending Revocation', value: '3', icon: UserXIcon, color: '#ef4444' },
+    { label: 'Pending Revocation', value: employeesReadyForRevocation.length.toString(), icon: UserXIcon, color: '#ef4444' },
     { label: 'System Uptime', value: '99.9%', icon: ServerIcon, color: '#a855f7' },
   ];
 
@@ -197,11 +232,104 @@ export function SystemAdminDashboard() {
         <Card variant="outlined">
           <CardContent>
             <Typography variant="h6" gutterBottom>
-              Access Revocation (Coming Soon)
+              Employees Ready for System Access Revocation
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
-              System access revocation is now managed through the Termination Reviews tab
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+              All clearance requirements completed. Click "Revoke Access" to terminate system access.
             </Typography>
+
+            {loading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                <CircularProgress />
+              </Box>
+            ) : employeesReadyForRevocation.length === 0 ? (
+              <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', bgcolor: 'action.hover' }}>
+                <UserCheckIcon sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                <Typography variant="body1" color="text.secondary" gutterBottom>
+                  No employees pending revocation
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  All employees with completed clearance checklists have been processed
+                </Typography>
+              </Paper>
+            ) : (
+              <Stack spacing={2}>
+                {employeesReadyForRevocation.map((item) => {
+                  const employee = item.employee;
+                  const termination = item.terminationRequest;
+                  const checklist = item.clearanceChecklist;
+
+                  return (
+                    <Paper key={termination._id} variant="outlined" sx={{ p: 2 }}>
+                      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+                        <Box>
+                          <Typography variant="subtitle1">
+                            {employee.firstName} {employee.lastName}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {employee.workEmail || employee.personalEmail}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                            {employee.department?.name || 'N/A'} · ID: {termination.employeeId.toString().slice(-8)}
+                          </Typography>
+                        </Box>
+                        <Chip label="Ready for Revocation" color="error" size="small" />
+                      </Stack>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          ✓ All Clearance Requirements Met:
+                        </Typography>
+                        <Stack direction="row" flexWrap="wrap" gap={1}>
+                          <Chip
+                            label={`${checklist.items.length} Departments Approved`}
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                          <Chip
+                            label={`${checklist.equipmentList.length} Equipment Returned`}
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                          <Chip
+                            label="Access Card Returned"
+                            size="small"
+                            color="success"
+                            variant="outlined"
+                          />
+                        </Stack>
+                      </Box>
+
+                      {termination.terminationDate && (
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                          Termination Date: {new Date(termination.terminationDate).toLocaleDateString()}
+                        </Typography>
+                      )}
+
+                      <Stack direction="row" spacing={1}>
+                        <Button
+                          variant="contained"
+                          color="error"
+                          fullWidth
+                          size="small"
+                          startIcon={<UserXIcon />}
+                          onClick={() =>
+                            handleRevokeAccess(
+                              termination._id,
+                              `${employee.firstName} ${employee.lastName}`
+                            )
+                          }
+                        >
+                          Revoke System Access
+                        </Button>
+                      </Stack>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            )}
           </CardContent>
         </Card>
       )}
