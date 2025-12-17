@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Briefcase, Bell, CheckCircle, Loader2 } from 'lucide-react';
 import {
   Box,
   Card,
@@ -22,6 +21,11 @@ import {
   Checkbox,
   FormControlLabel
 } from '@mui/material';
+import {
+  Work as WorkIcon,
+  Notifications as NotificationsIcon,
+  CheckCircle as CheckCircleIcon
+} from '@mui/icons-material';
 import { recruitmentApi } from '@/lib/api';
 import { useMutation } from '@/lib/hooks/useApi';
 import { toast } from 'sonner';
@@ -138,7 +142,7 @@ export default function CandidateDashboard() {
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Briefcase />
+                  <WorkIcon color="primary" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">Active Applications</Typography>
                     <Typography variant="h5" fontWeight={700}>{myApplications.length}</Typography>
@@ -150,7 +154,7 @@ export default function CandidateDashboard() {
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <Bell />
+                  <NotificationsIcon color="primary" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">Open Positions</Typography>
                     <Typography variant="h5" fontWeight={700}>{openJobs.length}</Typography>
@@ -162,7 +166,7 @@ export default function CandidateDashboard() {
             <Card>
               <CardContent>
                 <Stack direction="row" spacing={2} alignItems="center">
-                  <CheckCircle />
+                  <CheckCircleIcon color="success" />
                   <Box>
                     <Typography variant="body2" color="text.secondary">Interviews Scheduled</Typography>
                     <Typography variant="h5" fontWeight={700}>{myApplications.filter(a => a.status === 'Interview').length}</Typography>

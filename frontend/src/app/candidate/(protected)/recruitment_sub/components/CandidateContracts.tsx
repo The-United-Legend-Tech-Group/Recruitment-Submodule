@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { recruitmentApi } from '@/lib/api/recruitment';
-import { FileText, Upload, CheckCircle, Clock, AlertCircle, DollarSign, Loader2, X } from 'lucide-react';
 import {
   Box,
   Stack,
@@ -16,8 +15,18 @@ import {
   Divider,
   Alert,
   LinearProgress,
-  IconButton
+  IconButton,
+  CircularProgress
 } from '@mui/material';
+import {
+  Description as DescriptionIcon,
+  CloudUpload as CloudUploadIcon,
+  CheckCircle as CheckCircleIcon,
+  AccessTime as AccessTimeIcon,
+  Warning as WarningIcon,
+  AttachMoney as AttachMoneyIcon,
+  Close as CloseIcon
+} from '@mui/icons-material';
 import { alpha } from '@mui/material/styles';
 
 interface Contract {
@@ -80,12 +89,12 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
 
   const getContractStatus = (contract: Contract) => {
     if (contract.employerSignedAt) {
-      return { label: 'Fully Signed', color: 'success' as const, icon: <CheckCircle className="w-4 h-4" /> };
+      return { label: 'Fully Signed', color: 'success' as const, icon: <CheckCircleIcon sx={{ fontSize: 16 }} /> };
     }
     if (contract.employeeSignedAt) {
-      return { label: 'Awaiting HR Signature', color: 'warning' as const, icon: <Clock className="w-4 h-4" /> };
+      return { label: 'Awaiting HR Signature', color: 'warning' as const, icon: <AccessTimeIcon sx={{ fontSize: 16 }} /> };
     }
-    return { label: 'Awaiting Your Signature', color: 'info' as const, icon: <AlertCircle className="w-4 h-4" /> };
+    return { label: 'Awaiting Your Signature', color: 'info' as const, icon: <WarningIcon sx={{ fontSize: 16 }} /> };
   };
 
   const getProgress = (contract: Contract) => {
@@ -126,7 +135,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                   justifyContent: 'center',
                 }}
               >
-                <FileText className="w-6 h-6 text-blue-600" />
+                <DescriptionIcon sx={{ fontSize: 24, color: 'primary.main' }} />
               </Box>
               <Box>
                 <Typography variant="h6" fontWeight={700}>
@@ -184,7 +193,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                     justifyContent: 'center',
                   }}
                 >
-                  <DollarSign className="w-5 h-5 text-green-600" />
+                  <AttachMoneyIcon sx={{ fontSize: 20, color: 'success.main' }} />
                 </Box>
                 <Box>
                   <Typography variant="caption" color="text.secondary">
@@ -208,7 +217,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                       justifyContent: 'center',
                     }}
                   >
-                    <DollarSign className="w-5 h-5 text-purple-600" />
+                    <AttachMoneyIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
                   </Box>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
@@ -236,9 +245,9 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
               <Box sx={{ flex: 1 }}>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                   {contract.employeeSignedAt ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
                   ) : (
-                    <Clock className="w-4 h-4 text-gray-400" />
+                    <AccessTimeIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
                   )}
                   <Typography variant="subtitle2" fontWeight={600}>Your Signature</Typography>
                 </Stack>
@@ -252,9 +261,9 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
               <Box sx={{ flex: 1 }}>
                 <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.5 }}>
                   {contract.employerSignedAt ? (
-                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <CheckCircleIcon sx={{ fontSize: 16, color: 'success.main' }} />
                   ) : (
-                    <Clock className="w-4 h-4 text-gray-400" />
+                    <AccessTimeIcon sx={{ fontSize: 16, color: 'text.disabled' }} />
                   )}
                   <Typography variant="subtitle2" fontWeight={600}>HR Signature</Typography>
                 </Stack>
@@ -269,12 +278,12 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
 
           {/* Alert Status */}
           {contract.employeeSignedAt && !contract.employerSignedAt && (
-            <Alert severity="warning" icon={<Clock className="w-5 h-5" />} sx={{ borderRadius: 2 }}>
+            <Alert severity="warning" icon={<AccessTimeIcon sx={{ fontSize: 20 }} />} sx={{ borderRadius: 2 }}>
               Your signature has been submitted. Waiting for HR to sign.
             </Alert>
           )}
           {contract.employeeSignedAt && contract.employerSignedAt && (
-            <Alert severity="success" icon={<CheckCircle className="w-5 h-5" />} sx={{ borderRadius: 2 }}>
+            <Alert severity="success" icon={<CheckCircleIcon sx={{ fontSize: 20 }} />} sx={{ borderRadius: 2 }}>
               Contract fully executed. Both parties have signed!
             </Alert>
           )}
@@ -323,7 +332,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                 {selectedFiles.length > 0 ? (
                   <>
                     <Box sx={{ p: 1, bgcolor: (theme) => theme.palette.mode === 'dark' ? alpha(theme.palette.primary.main, 0.2) : 'primary.100', borderRadius: '50%', color: 'primary.main', mb: 1 }}>
-                      <FileText className="w-6 h-6" />
+                      <DescriptionIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Typography variant="body2" fontWeight={600} color="primary.main">
                       {selectedFiles[0].name}
@@ -336,7 +345,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                       color="error"
                       onClick={handleRemoveFile}
                       sx={{ mt: 1 }}
-                      startIcon={<X className="w-3 h-3" />}
+                      startIcon={<CloseIcon sx={{ fontSize: 12 }} />}
                     >
                       Remove
                     </Button>
@@ -344,7 +353,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                 ) : (
                   <>
                     <Box sx={{ p: 1, bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'action.hover', borderRadius: '50%', color: 'text.secondary', mb: 1 }}>
-                      <Upload className="w-6 h-6" />
+                      <CloudUploadIcon sx={{ fontSize: 24 }} />
                     </Box>
                     <Typography variant="body2" color="text.primary" fontWeight={500}>
                       Click to upload or drag and drop
@@ -372,7 +381,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                     color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'text.disabled'
                   }
                 }}
-                startIcon={uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon sx={{ fontSize: 20 }} />}
               >
                 {uploading ? 'Uploading...' : 'Submit Signed Contract'}
               </Button>
@@ -409,7 +418,7 @@ export default function CandidateContracts({ }: {}) {
     <Box sx={{ py: 3 }}>
       <Stack spacing={3}>
         <Stack direction="row" alignItems="center" spacing={2}>
-          <FileText className="w-6 h-6 text-blue-600" />
+          <DescriptionIcon sx={{ fontSize: 24, color: 'primary.main' }} />
           <Typography variant="h5" fontWeight={700}>
             My Contracts
           </Typography>
@@ -419,7 +428,7 @@ export default function CandidateContracts({ }: {}) {
           <Card variant="outlined">
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ py: 8 }}>
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <CircularProgress size={32} />
                 <Typography color="text.secondary">Loading contracts...</Typography>
               </Stack>
             </CardContent>
@@ -438,7 +447,7 @@ export default function CandidateContracts({ }: {}) {
           <Card variant="outlined">
             <CardContent>
               <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
-                <FileText className="w-16 h-16 text-gray-400" />
+                <DescriptionIcon sx={{ fontSize: 64, color: 'text.disabled' }} />
                 <Box textAlign="center">
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     No contracts yet

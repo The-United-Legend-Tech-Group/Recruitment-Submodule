@@ -1,7 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Copy, Loader2, Trash2, Eye, X, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon,
+  Visibility as VisibilityIcon,
+  Close as CloseIcon,
+  CheckCircle as CheckCircleIcon,
+  AccessTime as AccessTimeIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
+import { CircularProgress } from '@mui/material';
 import { recruitmentApi, OnboardingTaskDto } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -153,7 +162,7 @@ export function OnboardingChecklists() {
           onClick={() => setShowCreateForm(true)}
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <AddIcon sx={{ fontSize: 16 }} />
           Create Checklist
         </button>
       </div>
@@ -163,7 +172,7 @@ export function OnboardingChecklists() {
         <h4 className="text-gray-900 font-medium mb-4">Active Onboarding Checklists</h4>
         {loading ? (
           <div className="flex justify-center items-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+            <CircularProgress size={24} />
           </div>
         ) : (
           <div className="space-y-4">
@@ -259,7 +268,7 @@ export function OnboardingChecklists() {
                         }}
                         className="flex items-center gap-2 px-3 py-1.5 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
                       >
-                        <Eye className="w-4 h-4" />
+                        <VisibilityIcon sx={{ fontSize: 16 }} />
                         View Details
                       </button>
                     </div>
@@ -288,7 +297,7 @@ export function OnboardingChecklists() {
                 }}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <X className="w-5 h-5 text-gray-500" />
+                <CloseIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
               </button>
             </div>
 
@@ -367,11 +376,11 @@ export function OnboardingChecklists() {
                           {/* Status Icon */}
                           <div className="mt-0.5">
                             {task.status === 'completed' ? (
-                              <CheckCircle className="w-5 h-5 text-green-600" />
+                              <CheckCircleIcon sx={{ fontSize: 20, color: 'success.main' }} />
                             ) : task.status === 'in_progress' ? (
-                              <Clock className="w-5 h-5 text-yellow-600" />
+                              <AccessTimeIcon sx={{ fontSize: 20, color: 'warning.main' }} />
                             ) : (
-                              <AlertCircle className="w-5 h-5 text-gray-400" />
+                              <WarningIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
                             )}
                           </div>
                           
@@ -550,7 +559,7 @@ export function OnboardingChecklists() {
                             onClick={() => removeTask(task.id)}
                             className="text-red-500 hover:text-red-700"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <DeleteIcon sx={{ fontSize: 16 }} />
                           </button>
                         )}
                       </div>
@@ -629,7 +638,7 @@ export function OnboardingChecklists() {
                 >
                   {isSubmitting ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <CircularProgress size={16} sx={{ color: 'inherit' }} />
                       Creating...
                     </>
                   ) : (

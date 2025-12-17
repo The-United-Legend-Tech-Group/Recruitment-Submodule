@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { FileText, DollarSign, Calendar, CheckCircle, X, Loader2, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogTitle,
@@ -19,8 +18,17 @@ import {
   CardActions,
   Divider,
   Alert,
-  TextField
+  TextField,
+  CircularProgress
 } from '@mui/material';
+import {
+  Description as DescriptionIcon,
+  AttachMoney as AttachMoneyIcon,
+  CalendarToday as CalendarTodayIcon,
+  CheckCircle as CheckCircleIcon,
+  Close as CloseIcon,
+  Warning as WarningIcon
+} from '@mui/icons-material';
 import { recruitmentApi } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -131,7 +139,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
       <Stack spacing={3}>
         {/* Header */}
         <Stack direction="row" alignItems="center" spacing={2}>
-          <FileText className="w-6 h-6 text-blue-600" />
+          <DescriptionIcon sx={{ fontSize: 24, color: 'primary.main' }} />
           <Typography variant="h5" fontWeight={600}>
             My Job Offers
           </Typography>
@@ -142,7 +150,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
           <Card variant="outlined">
             <CardContent>
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={2} sx={{ py: 8 }}>
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+                <CircularProgress size={32} />
                 <Typography color="text.secondary">Loading offers...</Typography>
               </Stack>
             </CardContent>
@@ -182,7 +190,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                               justifyContent: 'center',
                             }}
                           >
-                            <FileText className="w-6 h-6 text-blue-600" />
+                            <DescriptionIcon sx={{ fontSize: 24, color: 'primary.main' }} />
                           </Box>
                           <Box>
                             <Typography variant="h6" fontWeight={600}>
@@ -225,7 +233,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                                 justifyContent: 'center',
                               }}
                             >
-                              <DollarSign className="w-5 h-5 text-green-600" />
+                              <AttachMoneyIcon sx={{ fontSize: 20, color: 'success.main' }} />
                             </Box>
                             <Box>
                               <Typography variant="caption" color="text.secondary">
@@ -249,7 +257,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                                   justifyContent: 'center',
                                 }}
                               >
-                                <DollarSign className="w-5 h-5 text-purple-600" />
+                                <AttachMoneyIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
                               </Box>
                               <Box>
                                 <Typography variant="caption" color="text.secondary">
@@ -297,7 +305,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                       {offer.deadline && (
                         <Alert
                           severity={expired && canRespond(offer) ? 'error' : 'info'}
-                          icon={<Calendar className="w-5 h-5" />}
+                          icon={<CalendarTodayIcon sx={{ fontSize: 20 }} />}
                           sx={{ borderRadius: 2 }}
                         >
                           <Typography variant="body2">
@@ -321,7 +329,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                       onClick={() => handleViewDetails(offer)}
                       variant="outlined"
                       size="medium"
-                      startIcon={<FileText className="w-4 h-4" />}
+                      startIcon={<DescriptionIcon sx={{ fontSize: 16 }} />}
                     >
                       View Details
                     </Button>
@@ -333,7 +341,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                           variant="outlined"
                           color="error"
                           size="medium"
-                          startIcon={<X className="w-4 h-4" />}
+                          startIcon={<CloseIcon sx={{ fontSize: 16 }} />}
                         >
                           Decline
                         </Button>
@@ -342,7 +350,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                           variant="contained"
                           color="success"
                           size="medium"
-                          startIcon={<CheckCircle className="w-4 h-4" />}
+                          startIcon={<CheckCircleIcon sx={{ fontSize: 16 }} />}
                         >
                           Accept Offer
                         </Button>
@@ -357,7 +365,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
           <Card variant="outlined">
             <CardContent>
               <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
-                <FileText className="w-16 h-16 text-gray-400" />
+                <DescriptionIcon sx={{ fontSize: 64, color: 'text.disabled' }} />
                 <Box textAlign="center">
                   <Typography variant="h6" color="text.secondary" gutterBottom>
                     No job offers yet
@@ -385,7 +393,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
         <DialogTitle>
           <Stack direction="row" justifyContent="space-between" alignItems="center">
             <Stack direction="row" spacing={1} alignItems="center">
-              <FileText className="w-5 h-5 text-blue-600" />
+              <DescriptionIcon sx={{ fontSize: 20, color: 'primary.main' }} />
               <Typography variant="h6">Offer Details</Typography>
             </Stack>
             <IconButton
@@ -395,7 +403,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
               }}
               size="small"
             >
-              <X className="w-5 h-5" />
+              <CloseIcon sx={{ fontSize: 20 }} />
             </IconButton>
           </Stack>
         </DialogTitle>
@@ -435,7 +443,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                   <Stack direction="row" spacing={4}>
                     <Box>
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <DollarSign className="w-5 h-5 text-green-600" />
+                        <AttachMoneyIcon sx={{ fontSize: 20, color: 'success.main' }} />
                         <Box>
                           <Typography variant="caption" color="text.secondary">
                             Annual Gross Salary
@@ -449,7 +457,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                     {selectedOffer.signingBonus > 0 && (
                       <Box>
                         <Stack direction="row" spacing={1} alignItems="center">
-                          <DollarSign className="w-5 h-5 text-purple-600" />
+                          <AttachMoneyIcon sx={{ fontSize: 20, color: 'secondary.main' }} />
                           <Box>
                             <Typography variant="caption" color="text.secondary">
                               Signing Bonus
@@ -528,7 +536,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                   }}
                 >
                   <Stack direction="row" spacing={2} alignItems="center">
-                    <Calendar className="w-5 h-5 text-orange-600" />
+                    <CalendarTodayIcon sx={{ fontSize: 20, color: 'warning.main' }} />
                     <Box>
                       <Typography variant="caption" color="text.secondary">
                         Response Deadline
@@ -611,9 +619,9 @@ export function CandidateOffers({ }: CandidateOffersProps) {
         <DialogTitle sx={{ pb: 1 }}>
           <Stack direction="row" spacing={1.5} alignItems="center">
             {responseAction === 'accepted' ? (
-              <CheckCircle className="w-6 h-6 text-green-600" />
+              <CheckCircleIcon sx={{ fontSize: 24, color: 'success.main' }} />
             ) : (
-              <AlertCircle className="w-6 h-6 text-red-600" />
+              <WarningIcon sx={{ fontSize: 24, color: 'error.main' }} />
             )}
             <Typography variant="h6" fontWeight={700} color={responseAction === 'accepted' ? 'success.main' : 'error.main'}>
               {responseAction === 'accepted' ? 'Accept Offer' : 'Decline Offer'}
@@ -657,7 +665,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                 <Alert
                   severity="success"
                   variant="standard"
-                  icon={<CheckCircle className="w-5 h-5" />}
+                  icon={<CheckCircleIcon sx={{ fontSize: 20 }} />}
                   sx={{
                     borderRadius: 2,
                     '& .MuiAlert-message': { width: '100%' }
@@ -674,7 +682,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                 <Alert
                   severity="error"
                   variant="standard"
-                  icon={<AlertCircle className="w-5 h-5" />}
+                  icon={<WarningIcon sx={{ fontSize: 20 }} />}
                   sx={{ borderRadius: 2 }}
                 >
                   <Typography variant="subtitle2" fontWeight={600} gutterBottom>
@@ -740,7 +748,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
             variant="contained"
             color={responseAction === 'accepted' ? 'success' : 'error'}
             disabled={isSubmitting}
-            startIcon={isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+            startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : null}
             sx={{
               borderRadius: 2,
               px: 4,
