@@ -385,12 +385,15 @@ export function OffersAndApprovals() {
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={3}>
               {/* Application Selection */}
-              <FormControl fullWidth required>
-                <InputLabel>Select Candidate (Offer Stage Only) *</InputLabel>
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Select Candidate (Offer Stage Only) *</Typography>
                 <Select
+                  fullWidth
                   value={formData.applicationId}
                   onChange={(e) => handleApplicationChange(e.target.value)}
-                  label="Select Candidate (Offer Stage Only) *"
+                  displayEmpty
+                  variant="outlined"
+                  sx={{ '& .MuiSelect-select': { padding: '10px 12px' } }}
                 >
                   <MenuItem value="">Select a candidate...</MenuItem>
                   {applications.map((app) => (
@@ -403,17 +406,21 @@ export function OffersAndApprovals() {
                 <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>
                   Only candidates at the "Offer" stage are shown
                 </Typography>
-              </FormControl>
+              </Box>
 
               {/* Role */}
-              <TextField
-                fullWidth
-                required
-                label="Role/Position"
-                value={formData.role}
-                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                placeholder="e.g., Senior Software Engineer"
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Role/Position *</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  required
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="e.g., Senior Software Engineer"
+                  sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                />
+              </Box>
 
               {/* Benefits */}
               <Box>
@@ -421,11 +428,13 @@ export function OffersAndApprovals() {
                 <Stack direction="row" spacing={1} mb={1}>
                   <TextField
                     fullWidth
+                    variant="outlined"
                     value={benefitInput}
                     onChange={(e) => setBenefitInput(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddBenefit())}
                     placeholder="Add a benefit and press Enter"
                     size="small"
+                    sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
                   />
                   <Button
                     variant="outlined"
@@ -450,45 +459,61 @@ export function OffersAndApprovals() {
               </Box>
 
               {/* Conditions */}
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                label="Conditions"
-                value={formData.conditions}
-                onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
-                placeholder="Employment conditions..."
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Conditions</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  multiline
+                  rows={1}
+                  value={formData.conditions}
+                  onChange={(e) => setFormData({ ...formData, conditions: e.target.value })}
+                  placeholder="Employment conditions..."
+                  sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                />
+              </Box>
 
               {/* Insurances */}
-              <TextField
-                fullWidth
-                label="Insurance Coverage"
-                value={formData.insurances}
-                onChange={(e) => setFormData({ ...formData, insurances: e.target.value })}
-                placeholder="e.g., Health, Dental, Vision"
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Insurance Coverage</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  value={formData.insurances}
+                  onChange={(e) => setFormData({ ...formData, insurances: e.target.value })}
+                  placeholder="e.g., Health, Dental, Vision"
+                  sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                />
+              </Box>
 
               {/* Content */}
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Additional Content"
-                value={formData.content}
-                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                placeholder="Additional offer details..."
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Additional Content</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  multiline
+                  rows={1}
+                  value={formData.content}
+                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                  placeholder="Additional offer details..."
+                  sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                />
+              </Box>
 
               {/* Deadline */}
-              <TextField
-                fullWidth
-                type="date"
-                label="Response Deadline"
-                value={formData.deadline}
-                onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
-                InputLabelProps={{ shrink: true }}
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Response Deadline</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  type="date"
+                  value={formData.deadline}
+                  onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
+                />
+              </Box>
 
             </Stack>
           </Box>

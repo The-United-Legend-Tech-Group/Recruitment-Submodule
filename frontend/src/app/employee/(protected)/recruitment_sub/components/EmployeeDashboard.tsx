@@ -695,37 +695,52 @@ export function EmployeeDashboard() {
           ) : (
             <Box component="form" onSubmit={handleSubmitResignation}>
               <Stack spacing={2}>
-                <TextField
-                  label="Proposed Last Working Date"
-                  type="date"
-                  value={resignationData.proposedLastWorkingDay}
-                  onChange={(e) => setResignationData({ ...resignationData, proposedLastWorkingDay: e.target.value })}
-                  InputLabelProps={{ shrink: true }}
-                  fullWidth
-                  helperText="Optional"
-                />
-                <TextField
-                  label="Reason for Resignation"
-                  multiline
-                  rows={4}
-                  required
-                  value={resignationData.reason}
-                  onChange={(e) => setResignationData({ ...resignationData, reason: e.target.value })}
-                  placeholder="Please provide a detailed reason for your resignation (minimum 20 characters)..."
-                  fullWidth
-                  helperText={`${resignationData.reason.length} / 20 characters (Required)`}
-                  error={resignationData.reason.length > 0 && resignationData.reason.length < 20}
-                />
-                <TextField
-                  label="Additional Comments"
-                  multiline
-                  rows={3}
-                  value={resignationData.employeeComments}
-                  onChange={(e) => setResignationData({ ...resignationData, employeeComments: e.target.value })}
-                  placeholder="Any additional comments or feedback..."
-                  fullWidth
-                  helperText="Optional"
-                />
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Proposed Last Working Date</Typography>
+                  <TextField
+                    type="date"
+                    value={resignationData.proposedLastWorkingDay}
+                    onChange={(e) => setResignationData({ ...resignationData, proposedLastWorkingDay: e.target.value })}
+                    fullWidth
+                    helperText="Optional"
+                    variant="outlined"
+                    InputLabelProps={{ shrink: true }}
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Reason for Resignation</Typography>
+                  <TextField
+                    multiline
+                    rows={1}
+                    required
+                    value={resignationData.reason}
+                    onChange={(e) => setResignationData({ ...resignationData, reason: e.target.value })}
+                    placeholder="Please provide a detailed reason for your resignation (minimum 20 characters)..."
+                    fullWidth
+                    helperText={`${resignationData.reason.length} / 20 characters (Required)`}
+                    error={resignationData.reason.length > 0 && resignationData.reason.length < 20}
+                    variant="outlined"
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
+                  />
+                </Box>
+
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Additional Comments</Typography>
+                  <TextField
+                    multiline
+                    rows={1}
+                    value={resignationData.employeeComments}
+                    onChange={(e) => setResignationData({ ...resignationData, employeeComments: e.target.value })}
+                    placeholder="Any additional comments or feedback..."
+                    fullWidth
+                    helperText="Optional"
+                    variant="outlined"
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
+                  />
+                </Box>
+
                 <Stack direction="row" spacing={2}>
                   <Button
                     variant="outlined"

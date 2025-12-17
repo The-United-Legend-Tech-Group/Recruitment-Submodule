@@ -285,16 +285,27 @@ export function TerminationReviews() {
                 <Typography variant="body2" color="text.secondary">Reason: {selectedRequest.reason}</Typography>
               </Box>
 
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label={`HR Comments${approvalAction === 'rejected' ? ' *' : ''}`}
-                value={hrComments}
-                onChange={(e) => setHrComments(e.target.value)}
-                placeholder={approvalAction === 'rejected' ? 'Please provide reason for rejection...' : 'Optional comments...'}
-                required={approvalAction === 'rejected'}
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  HR Comments{approvalAction === 'rejected' ? ' *' : ''}
+                </Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  multiline
+                  rows={4}
+                  value={hrComments}
+                  onChange={(e) => setHrComments(e.target.value)}
+                  placeholder={approvalAction === 'rejected' ? 'Please provide reason for rejection...' : 'Optional comments...'}
+                  required={approvalAction === 'rejected'}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      padding: '10px 12px',
+                      whiteSpace: 'pre-wrap',
+                    },
+                  }}
+                />
+              </Box>
             </Stack>
           )}
         </DialogContent>
@@ -336,67 +347,100 @@ export function TerminationReviews() {
         </DialogTitle>
         <DialogContent>
           <Stack spacing={3} component="form" sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              label="Employee ID *"
-              placeholder="Enter employee MongoDB ID"
-              helperText="Enter the MongoDB ObjectId of the employee"
-              value={formData.employeeId}
-              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-            />
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Employee ID *</Typography>
+              <TextField
+                fullWidth
+                placeholder="Enter employee MongoDB ID"
+                helperText="Enter the MongoDB ObjectId of the employee"
+                value={formData.employeeId}
+                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+              />
+            </Box>
 
-            <TextField
-              fullWidth
-              label="Contract ID *"
-              placeholder="Enter contract MongoDB ID"
-              helperText="Enter the MongoDB ObjectId of the contract"
-              value={formData.contractId}
-              onChange={(e) => setFormData({ ...formData, contractId: e.target.value })}
-            />
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Contract ID *</Typography>
+              <TextField
+                fullWidth
+                placeholder="Enter contract MongoDB ID"
+                helperText="Enter the MongoDB ObjectId of the contract"
+                value={formData.contractId}
+                onChange={(e) => setFormData({ ...formData, contractId: e.target.value })}
+              />
+            </Box>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Termination Reason *"
-              placeholder="Enter termination reason (e.g., Performance Issues, Misconduct, Redundancy)"
-              value={formData.reason}
-              onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
-            />
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Termination Reason *</Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={1}
+                placeholder="Enter termination reason (e.g., Performance Issues, Misconduct, Redundancy)"
+                value={formData.reason}
+                onChange={(e) => setFormData({ ...formData, reason: e.target.value })}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    padding: '10px 12px',
+                    whiteSpace: 'pre-wrap',
+                  },
+                }}
+              />
+            </Box>
 
-            <FormControl fullWidth>
-              <InputLabel>Initiator *</InputLabel>
-              <Select
-                label="Initiator *"
-                value={formData.initiator}
-                onChange={(e) => setFormData({ ...formData, initiator: e.target.value })}
-              >
-                <MenuItem value="">Select who is initiating...</MenuItem>
-                <MenuItem value="hr">HR</MenuItem>
-                <MenuItem value="manager">Manager</MenuItem>
-                <MenuItem value="employee">Employee</MenuItem>
-              </Select>
-            </FormControl>
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Initiator *</Typography>
+              <FormControl fullWidth>
+                <Select
+                  value={formData.initiator}
+                  onChange={(e) => setFormData({ ...formData, initiator: e.target.value })}
+                  displayEmpty
+                >
+                  <MenuItem value="">Select who is initiating...</MenuItem>
+                  <MenuItem value="hr">HR</MenuItem>
+                  <MenuItem value="manager">Manager</MenuItem>
+                  <MenuItem value="employee">Employee</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Employee Comments"
-              placeholder="Optional employee comments"
-              value={formData.employeeComments}
-              onChange={(e) => setFormData({ ...formData, employeeComments: e.target.value })}
-            />
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Employee Comments</Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={1}
+                placeholder="Optional employee comments"
+                value={formData.employeeComments}
+                onChange={(e) => setFormData({ ...formData, employeeComments: e.target.value })}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    padding: '10px 12px',
+                    whiteSpace: 'pre-wrap',
+                  },
+                }}
+              />
+            </Box>
 
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="HR Comments"
-              placeholder="Optional HR comments"
-              value={formData.hrComments}
-              onChange={(e) => setFormData({ ...formData, hrComments: e.target.value })}
-            />
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>HR Comments</Typography>
+              <TextField
+                fullWidth
+                variant="outlined"
+                multiline
+                rows={1}
+                placeholder="Optional HR comments"
+                value={formData.hrComments}
+                onChange={(e) => setFormData({ ...formData, hrComments: e.target.value })}
+                sx={{
+                  '& .MuiInputBase-input': {
+                    padding: '10px 12px',
+                    whiteSpace: 'pre-wrap',
+                  },
+                }}
+              />
+            </Box>
 
             <Box>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>Supporting Documentation (Optional)</Typography>

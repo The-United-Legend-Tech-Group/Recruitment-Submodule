@@ -217,44 +217,56 @@ export function JobTemplates() {
             <DialogContent dividers>
               <Stack spacing={3} component="form" onSubmit={handleSubmit}>
                 <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-                  <TextField
-                    label="Job Title"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g. Senior Developer"
-                    required
-                    fullWidth
-                  />
-                  <TextField
-                    label="Department"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                    placeholder="e.g. Engineering"
-                    required
-                    fullWidth
-                  />
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>Job Title</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g. Senior Developer"
+                      required
+                      sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>Department</Typography>
+                    <TextField
+                      fullWidth
+                      variant="outlined"
+                      value={formData.department}
+                      onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                      placeholder="e.g. Engineering"
+                      required
+                      sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                    />
+                  </Box>
                 </Box>
 
+                <Typography variant="body2" sx={{ mb: 1 }}>Job Description</Typography>
                 <TextField
-                  label="Job Description"
+                  fullWidth
+                  variant="outlined"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Describe the role and responsibilities..."
                   multiline
-                  rows={4}
-                  fullWidth
+                  rows={1}
+                  sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
                 />
 
                 <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Qualifications</Typography>
                   <TextField
-                    label="Qualifications"
+                    fullWidth
+                    variant="outlined"
                     value={formData.qualifications}
                     onChange={(e) => setFormData({ ...formData, qualifications: e.target.value })}
                     placeholder="Enter qualifications separated by commas (e.g. Bachelor's degree in CS, 3+ years experience, Strong problem-solving)"
                     multiline
-                    rows={3}
+                    rows={1}
                     required
-                    fullWidth
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
                   />
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                     Separate each qualification with a comma
@@ -262,15 +274,17 @@ export function JobTemplates() {
                 </Box>
 
                 <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Skills</Typography>
                   <TextField
-                    label="Skills"
+                    fullWidth
+                    variant="outlined"
                     value={formData.skills}
                     onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
                     placeholder="Enter skills separated by commas (e.g. JavaScript, React, Node.js, MongoDB)"
                     multiline
-                    rows={3}
+                    rows={1}
                     required
-                    fullWidth
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px', whiteSpace: 'pre-wrap' } }}
                   />
                   <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
                     Separate each skill with a comma
