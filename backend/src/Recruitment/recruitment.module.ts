@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { RecruitmentController } from './recruitment.controller';
@@ -103,7 +103,7 @@ import { PayrollModule } from '../payroll/payroll.module';
     // Module imports
     EmployeeModule,
     NotificationModule,
-    PerformanceModule,
+    forwardRef(() => PerformanceModule),
     OrganizationStructureModule,
     LeavesModule,
     PayrollModule,
