@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException, } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef, } from '@nestjs/common';
 import { Types } from 'mongoose';
 import {
   TerminationRequestRepository,
@@ -39,6 +39,7 @@ export class OffboardingService {
     private readonly clearanceChecklistRepository: ClearanceChecklistRepository,
     //   private readonly employeeTerminationResignationRepository: EmployeeTerminationResignationRepository,
     private employeeService: EmployeeService,
+    @Inject(forwardRef(() => AppraisalRecordService))
     private appraisalrecordservice: AppraisalRecordService,
     //private leavesRequestService: LeavesRequestService, check this later on again
     private notificationService: NotificationService,
@@ -129,38 +130,38 @@ export class OffboardingService {
       if (!employeeProfile || !employeeProfile.profile) {
         throw new Error('Employee profile not found');
       }
-      
+
       const employeeNumber = employeeProfile.profile.employeeNumber;
       console.log(`Employee number: ${employeeNumber}`);
-      
+
       // Step 1.2: Convert employee number to candidate number (EMP -> CAN)
       if (!employeeNumber || !employeeNumber.startsWith('EMP')) {
         throw new Error(`Invalid employee number format: ${employeeNumber}`);
       }
       const candidateNumber = 'CAN' + employeeNumber.substring(3);
       console.log(`Converted to candidate number: ${candidateNumber}`);
-      
+
       // Step 1.3: Find candidate by candidate number
       const candidate = await this.candidateRepository.findByCandidateNumber(candidateNumber);
       if (!candidate) {
         throw new Error(`Candidate with number ${candidateNumber} not found`);
       }
       console.log(`Found candidate with ID: ${candidate._id}`);
-      
+
       // Step 1.4: Find offers for the candidate
       const offers = await this.offerRepository.findByCandidateId(candidate._id.toString());
       if (!offers || offers.length === 0) {
         throw new Error(`No offers found for candidate ${candidateNumber}`);
       }
       console.log(`Found ${offers.length} offer(s) for candidate`);
-      
+
       // Step 1.5: Find the accepted offer
       const acceptedOffer = offers.find(offer => offer.applicantResponse === OfferResponseStatus.ACCEPTED);
       if (!acceptedOffer) {
         throw new Error(`No accepted offer found for candidate ${candidateNumber}`);
       }
       console.log(`Found accepted offer with ID: ${acceptedOffer._id}`);
-      
+
       // Step 1.6: Find contract using the accepted offer ID
       const contract = await this.contractRepository.findOne({ offerId: acceptedOffer._id });
       if (!contract) {
@@ -169,32 +170,32 @@ export class OffboardingService {
       console.log(`Found contract with ID: ${contract._id}`);
       console.log(`Contract benefits:`, contract.benefits);
       console.log(`Offer benefits:`, acceptedOffer.benefits);
-      
+
       // Step 1.7: Extract benefits from contract, fallback to offer benefits if contract has none
       let benefits = contract.benefits || [];
-      
+
       // If contract has no benefits, try to get them from the offer
       if (benefits.length === 0 && acceptedOffer.benefits && acceptedOffer.benefits.length > 0) {
         console.log(`No benefits in contract, using benefits from offer instead`);
         benefits = acceptedOffer.benefits;
       }
-      
+
       if (benefits.length === 0) {
         throw new Error(`No benefits found in contract or offer for candidate ${candidateNumber}`);
       }
       console.log(`Found ${benefits.length} benefits: ${benefits.join(', ')}`);
-      
+
       // Step 1.8: Use the benefits as the benefit name (combine if multiple)
       const benefitName = benefits.join(', ');
 
       console.log(`Using benefit name: ${benefitName}`);
-      
+
       const terminationBenefitDto = {
         employeeId: dto.employeeId,
         benefitName: benefitName,
         terminationId: savedTerminationRequest._id.toString(),
       };
-      
+
       const terminationBenefit = await this.employeeTerminationService.createEmployeeTermination(terminationBenefitDto);
       console.log(`✓ Employee termination benefits record created successfully for employee ${dto.employeeId}`);
       console.log(`Benefit details:`, terminationBenefit);
@@ -763,32 +764,32 @@ ${dto.additionalMessage ? `--- ADDITIONAL NOTES ---\n${dto.additionalMessage}\n\
     try {
       const employeeNumber = employee.profile.employeeNumber;
       console.log(`Finding contract for employee number: ${employeeNumber}`);
-      
+
       if (!employeeNumber || !employeeNumber.startsWith('EMP')) {
         throw new Error(`Invalid employee number format: ${employeeNumber}`);
       }
-      
+
       const candidateNumber = 'CAN' + employeeNumber.substring(3);
       const candidate = await this.candidateRepository.findByCandidateNumber(candidateNumber);
       if (!candidate) {
         throw new Error(`Candidate with number ${candidateNumber} not found`);
       }
-      
+
       const offers = await this.offerRepository.findByCandidateId(candidate._id.toString());
       if (!offers || offers.length === 0) {
         throw new Error(`No offers found for candidate ${candidateNumber}`);
       }
-      
+
       const acceptedOffer = offers.find(offer => offer.applicantResponse === OfferResponseStatus.ACCEPTED);
       if (!acceptedOffer) {
         throw new Error(`No accepted offer found for candidate ${candidateNumber}`);
       }
-      
+
       const contract = await this.contractRepository.findOne({ offerId: acceptedOffer._id });
       if (!contract) {
         throw new Error(`Contract not found for accepted offer ${acceptedOffer._id}`);
       }
-      
+
       contractId = contract._id;
       console.log(`Contract ${contractId} found and validated successfully`);
     } catch (error) {
@@ -824,38 +825,38 @@ ${dto.additionalMessage ? `--- ADDITIONAL NOTES ---\n${dto.additionalMessage}\n\
       if (!employeeProfile || !employeeProfile.profile) {
         throw new Error('Employee profile not found');
       }
-      
+
       const employeeNumber = employeeProfile.profile.employeeNumber;
       console.log(`Employee number: ${employeeNumber}`);
-      
+
       // Step 1.2: Convert employee number to candidate number (EMP -> CAN)
       if (!employeeNumber || !employeeNumber.startsWith('EMP')) {
         throw new Error(`Invalid employee number format: ${employeeNumber}`);
       }
       const candidateNumber = 'CAN' + employeeNumber.substring(3);
       console.log(`Converted to candidate number: ${candidateNumber}`);
-      
+
       // Step 1.3: Find candidate by candidate number
       const candidate = await this.candidateRepository.findByCandidateNumber(candidateNumber);
       if (!candidate) {
         throw new Error(`Candidate with number ${candidateNumber} not found`);
       }
       console.log(`Found candidate with ID: ${candidate._id}`);
-      
+
       // Step 1.4: Find offers for the candidate
       const offers = await this.offerRepository.findByCandidateId(candidate._id.toString());
       if (!offers || offers.length === 0) {
         throw new Error(`No offers found for candidate ${candidateNumber}`);
       }
       console.log(`Found ${offers.length} offer(s) for candidate`);
-      
+
       // Step 1.5: Find the accepted offer
       const acceptedOffer = offers.find(offer => offer.applicantResponse === OfferResponseStatus.ACCEPTED);
       if (!acceptedOffer) {
         throw new Error(`No accepted offer found for candidate ${candidateNumber}`);
       }
       console.log(`Found accepted offer with ID: ${acceptedOffer._id}`);
-      
+
       // Step 1.6: Find contract using the accepted offer ID
       const resignationContract = await this.contractRepository.findOne({ offerId: acceptedOffer._id });
       if (!resignationContract) {
@@ -864,32 +865,32 @@ ${dto.additionalMessage ? `--- ADDITIONAL NOTES ---\n${dto.additionalMessage}\n\
       console.log(`Found contract with ID: ${resignationContract._id}`);
       console.log(`Contract benefits:`, resignationContract.benefits);
       console.log(`Offer benefits:`, acceptedOffer.benefits);
-      
+
       // Step 1.7: Extract benefits from contract, fallback to offer benefits if contract has none
       let benefits = resignationContract.benefits || [];
-      
+
       // If contract has no benefits, try to get them from the offer
       if (benefits.length === 0 && acceptedOffer.benefits && acceptedOffer.benefits.length > 0) {
         console.log(`No benefits in contract, using benefits from offer instead`);
         benefits = acceptedOffer.benefits;
       }
-      
+
       if (benefits.length === 0) {
         throw new Error(`No benefits found in contract or offer for candidate ${candidateNumber}`);
       }
       console.log(`Found ${benefits.length} benefits: ${benefits.join(', ')}`);
-      
+
       // Step 1.8: Use the benefits as the benefit name (combine if multiple)
       const benefitName = benefits.join(', ');
 
       console.log(`Using benefit name: ${benefitName}`);
-      
+
       const terminationBenefitDto = {
         employeeId: dto.employeeId,
         benefitName: benefitName,
         terminationId: savedResignation._id.toString(),
       };
-      
+
       const terminationBenefit = await this.employeeTerminationService.createEmployeeTermination(terminationBenefitDto);
       console.log(`✓ Employee termination benefits record created successfully for employee ${dto.employeeId}`);
       console.log(`Benefit details:`, terminationBenefit);
@@ -1760,8 +1761,8 @@ ${cardReturned ? 'Thank you for returning your access card.' : 'Please ensure yo
           const employeeProfile = await this.employeeService.getProfile(
             terminationRequest.employeeId.toString()
           );
-          const employeeName = employeeProfile?.profile 
-            ? `${employeeProfile.profile.firstName} ${employeeProfile.profile.lastName}` 
+          const employeeName = employeeProfile?.profile
+            ? `${employeeProfile.profile.firstName} ${employeeProfile.profile.lastName}`
             : 'Employee';
 
           const autoApprovalNotification = {
@@ -2072,7 +2073,7 @@ The employee is now ready for system access revocation. Please navigate to Syste
 
         // All requirements met - add to ready list
         console.log(`Employee ${terminationRequest.employeeId} is ready for revocation`);
-        
+
         readyForRevocation.push({
           terminationRequest: terminationRequest,
           employee: employee.profile,
