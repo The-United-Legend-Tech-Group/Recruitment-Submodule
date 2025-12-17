@@ -15,7 +15,7 @@ import StarBorderIcon from '@mui/icons-material/StarBorder';
 import MessageIcon from '@mui/icons-material/Message';
 import SendIcon from '@mui/icons-material/Send';
 import InputAdornment from '@mui/material/InputAdornment';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import api from '@/lib/axios';
 
 interface InterviewFeedbackProps {
@@ -29,6 +29,7 @@ export function InterviewFeedback({
     interviewerId,
     onSubmitSuccess
 }: InterviewFeedbackProps) {
+    const toast = useToast();
     const [score, setScore] = useState<number>(0);
     const [comments, setComments] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -257,3 +258,4 @@ export function InterviewFeedback({
         </Card>
     );
 }
+

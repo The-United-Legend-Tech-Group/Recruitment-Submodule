@@ -28,7 +28,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface Assessment {
     _id: string;
@@ -149,6 +149,7 @@ function AssessmentRow({ assessment }: { assessment: Assessment }) {
 }
 
 export function AllAssessments() {
+    const toast = useToast();
     const [loading, setLoading] = useState(true);
     const [assessments, setAssessments] = useState<Assessment[]>([]);
     const [filteredAssessments, setFilteredAssessments] = useState<Assessment[]>([]);
@@ -297,3 +298,4 @@ export function AllAssessments() {
         </Stack>
     );
 }
+

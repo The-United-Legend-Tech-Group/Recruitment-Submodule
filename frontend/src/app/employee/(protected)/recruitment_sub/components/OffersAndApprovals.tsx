@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 // Removed unused import
 import {
   Box,
@@ -41,6 +41,7 @@ import {
 } from '@mui/icons-material';
 
 export function OffersAndApprovals() {
+  const toast = useToast();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showApproverModal, setShowApproverModal] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -794,3 +795,4 @@ export function OffersAndApprovals() {
     </Stack>
   );
 }
+

@@ -12,20 +12,21 @@ import {
 } from '@mui/icons-material';
 import { CircularProgress } from '@mui/material';
 import { recruitmentApi, OnboardingTaskDto } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface TaskInput extends OnboardingTaskDto {
   id: string;
 }
 
 export function OnboardingChecklists() {
+  const toast = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<any>(null);
   const [checklists, setChecklists] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Form state
   const [employeeId, setEmployeeId] = useState('');
   const [contractId, setContractId] = useState('');
@@ -52,12 +53,12 @@ export function OnboardingChecklists() {
   };
 
   const addTask = () => {
-    setTasks([...tasks, { 
-      id: Date.now().toString(), 
-      name: '', 
-      department: '', 
-      deadline: '', 
-      notes: '' 
+    setTasks([...tasks, {
+      id: Date.now().toString(),
+      name: '',
+      department: '',
+      deadline: '',
+      notes: ''
     }]);
   };
 
@@ -68,14 +69,14 @@ export function OnboardingChecklists() {
   };
 
   const updateTask = (id: string, field: keyof OnboardingTaskDto, value: string) => {
-    setTasks(tasks.map(task => 
+    setTasks(tasks.map(task =>
       task.id === id ? { ...task, [field]: value } : task
     ));
   };
 
   const handleCreateChecklist = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!employeeId) {
       toast.error('Employee ID is required');
       return;
@@ -100,17 +101,17 @@ export function OnboardingChecklists() {
         tasks: validTasks.map(({ id, ...task }) => task),
         notes: notes || undefined,
       };
-      
+
       await recruitmentApi.createOnboardingChecklist(checklistData);
       toast.success('Onboarding checklist created successfully!');
       setShowCreateForm(false);
-      
+
       // Reset form
       setEmployeeId('');
       setContractId('');
       setNotes('');
       setTasks([{ id: '1', name: '', department: '', deadline: '', notes: '' }]);
-      
+
       fetchChecklists();
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || error.message || 'Failed to create checklist';
@@ -124,19 +125,19 @@ export function OnboardingChecklists() {
     try {
       // Ensure employeeId is a string (it could be an ObjectId object from MongoDB)
       const empId = typeof employeeId === 'object' ? (employeeId as any).toString() : String(employeeId);
-      
+
       await recruitmentApi.updateTaskStatus({
         employeeId: empId,
         taskName: taskName,
         status: status,
       });
       toast.success(`Task "${taskName}" updated to ${status.replace('_', ' ')}!`);
-      
+
       // Refresh checklists and update selected checklist if modal is open
       const response = await recruitmentApi.getAllOnboardingChecklists();
       const newChecklists = response.data.checklists || [];
       setChecklists(newChecklists);
-      
+
       // Update selected checklist if modal is open
       if (selectedChecklist) {
         const updatedChecklist = newChecklists.find(
@@ -182,7 +183,7 @@ export function OnboardingChecklists() {
               checklists.map((item: any) => {
                 const onboarding = item.onboarding;
                 const progress = item.progress;
-                
+
                 return (
                   <div key={onboarding._id} className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
                     <div className="flex items-start justify-between mb-3">
@@ -242,10 +243,9 @@ export function OnboardingChecklists() {
                         <div className="space-y-1">
                           {onboarding.tasks.slice(0, 3).map((task: any, idx: number) => (
                             <div key={idx} className="flex items-center gap-2 text-xs">
-                              <span className={`w-2 h-2 rounded-full ${
-                                task.status === 'completed' ? 'bg-green-500' :
-                                task.status === 'in_progress' ? 'bg-yellow-500' : 'bg-gray-300'
-                              }`}></span>
+                              <span className={`w-2 h-2 rounded-full ${task.status === 'completed' ? 'bg-green-500' :
+                                  task.status === 'in_progress' ? 'bg-yellow-500' : 'bg-gray-300'
+                                }`}></span>
                               <span className="text-gray-700">{task.name}</span>
                               {task.department && (
                                 <span className="text-gray-500">({task.department})</span>
@@ -317,7 +317,7 @@ export function OnboardingChecklists() {
                     <p className="text-xs text-gray-500">Complete</p>
                   </div>
                 </div>
-                
+
                 {/* Progress Bar */}
                 <div className="w-full bg-gray-200 rounded-full h-3 mb-4">
                   <div
@@ -361,15 +361,14 @@ export function OnboardingChecklists() {
                 <h4 className="font-medium text-gray-900 mb-4">All Tasks ({selectedChecklist.onboarding.tasks?.length || 0})</h4>
                 <div className="space-y-3">
                   {selectedChecklist.onboarding.tasks?.map((task: any, idx: number) => (
-                    <div 
-                      key={idx} 
-                      className={`p-4 rounded-lg border ${
-                        task.status === 'completed' 
-                          ? 'bg-green-50 border-green-200' 
+                    <div
+                      key={idx}
+                      className={`p-4 rounded-lg border ${task.status === 'completed'
+                          ? 'bg-green-50 border-green-200'
                           : task.status === 'in_progress'
-                          ? 'bg-yellow-50 border-yellow-200'
-                          : 'bg-white border-gray-200'
-                      }`}
+                            ? 'bg-yellow-50 border-yellow-200'
+                            : 'bg-white border-gray-200'
+                        }`}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-3 flex-1">
@@ -383,21 +382,20 @@ export function OnboardingChecklists() {
                               <WarningIcon sx={{ fontSize: 20, color: 'text.disabled' }} />
                             )}
                           </div>
-                          
+
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-1">
                               <h5 className="font-medium text-gray-900">{task.name}</h5>
-                              <span className={`px-2 py-0.5 text-xs rounded capitalize ${
-                                task.status === 'completed' 
-                                  ? 'bg-green-100 text-green-700' 
+                              <span className={`px-2 py-0.5 text-xs rounded capitalize ${task.status === 'completed'
+                                  ? 'bg-green-100 text-green-700'
                                   : task.status === 'in_progress'
-                                  ? 'bg-yellow-100 text-yellow-700'
-                                  : 'bg-gray-100 text-gray-700'
-                              }`}>
+                                    ? 'bg-yellow-100 text-yellow-700'
+                                    : 'bg-gray-100 text-gray-700'
+                                }`}>
                                 {task.status?.replace('_', ' ') || 'pending'}
                               </span>
                             </div>
-                            
+
                             <div className="grid grid-cols-2 gap-4 text-sm mt-2">
                               {task.department && (
                                 <div>
@@ -418,7 +416,7 @@ export function OnboardingChecklists() {
                                 </div>
                               )}
                             </div>
-                            
+
                             {task.notes && (
                               <div className="mt-2 p-2 bg-white bg-opacity-50 rounded text-sm">
                                 <span className="text-gray-500">Notes:</span>{' '}
@@ -547,7 +545,7 @@ export function OnboardingChecklists() {
                     + Add Task
                   </button>
                 </div>
-                
+
                 <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                   {tasks.map((task, index) => (
                     <div key={task.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
@@ -563,7 +561,7 @@ export function OnboardingChecklists() {
                           </button>
                         )}
                       </div>
-                      
+
                       <div className="grid grid-cols-2 gap-3">
                         <div className="col-span-2">
                           <label className="block text-xs text-gray-600 mb-1">

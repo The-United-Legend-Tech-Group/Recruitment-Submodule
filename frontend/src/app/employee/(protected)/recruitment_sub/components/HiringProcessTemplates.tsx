@@ -20,9 +20,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CloseIcon from '@mui/icons-material/Close';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function HiringProcessTemplates() {
+  const toast = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [processTemplates, setProcessTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -194,3 +195,4 @@ export function HiringProcessTemplates() {
     </Stack>
   );
 }
+

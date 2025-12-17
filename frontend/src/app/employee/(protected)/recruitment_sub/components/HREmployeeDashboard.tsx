@@ -17,7 +17,7 @@ import SendIcon from '@mui/icons-material/Send';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import { JobPostings } from './JobPostings';
 import { CandidateTracking } from './CandidateTracking';
 import { InterviewScheduling } from './InterviewScheduling';
@@ -27,6 +27,7 @@ import { ResourceReservation } from './ResourceReservation';
 
 type Tab = 'overview' | 'job-postings' | 'candidates' | 'interviews' | 'all-assessments' | 'notifications' | 'resources';
 export function HREmployeeDashboard() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
   const tabs = [
@@ -182,3 +183,4 @@ export function HREmployeeDashboard() {
     </Box>
   );
 }
+

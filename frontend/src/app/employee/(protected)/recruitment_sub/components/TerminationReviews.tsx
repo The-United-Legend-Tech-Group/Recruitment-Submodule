@@ -21,9 +21,10 @@ import InputLabel from '@mui/material/InputLabel';
 import WarningIcon from '@mui/icons-material/Warning';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { offboardingApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function TerminationReviews() {
+  const toast = useToast();
   const [showInitiateForm, setShowInitiateForm] = useState(false);
   const [terminationRequests, setTerminationRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

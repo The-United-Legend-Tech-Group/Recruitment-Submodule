@@ -21,7 +21,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import CircularProgress from '@mui/material/CircularProgress';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import { recruitmentApi } from '@/lib/api/recruitment';
 
 interface Contract {
@@ -45,6 +45,7 @@ interface Contract {
 }
 
 export default function HRContracts() {
+  const toast = useToast();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
@@ -133,7 +134,7 @@ export default function HRContracts() {
       }
 
       console.log('Showing toast with message:', errorMessage);
-      toast.error(errorMessage, { duration: 5000 });
+      toast.error(errorMessage);
     } finally {
       setSigning(false);
     }
@@ -490,3 +491,4 @@ export default function HRContracts() {
     </Stack>
   );
 }
+

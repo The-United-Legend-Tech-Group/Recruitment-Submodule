@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import { recruitmentApi } from '@/lib/api/recruitment';
 import {
   Box,
@@ -50,6 +50,7 @@ interface ContractCardProps {
 }
 
 function ContractCard({ contract, onRefresh }: ContractCardProps) {
+  const toast = useToast();
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
@@ -394,6 +395,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
 }
 
 export default function CandidateContracts({ }: {}) {
+  const toast = useToast();
   const [contracts, setContracts] = useState<Contract[]>([]);
   const [loading, setLoading] = useState(true);
 

@@ -28,13 +28,14 @@ import {
 } from '@mui/icons-material';
 import { recruitmentApi } from '@/lib/api';
 import { useMutation } from '@/lib/hooks/useApi';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import { decryptData } from '@/common/utils/encryption';
 import CandidateContracts from './CandidateContracts';
 import { CandidateOffers } from './CandidateOffers';
 
 export default function CandidateDashboard() {
   const router = useRouter();
+  const toast = useToast();
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [selectedJob, setSelectedJob] = useState<any>(null);
   const [openJobs, setOpenJobs] = useState<any[]>([]);

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { recruitmentApi, offboardingApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import {
   Box,
   Stack,
@@ -28,6 +28,7 @@ import {
 } from '@mui/icons-material';
 
 export function SystemAdminDashboard() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<'provisioning' | 'revocation'>('provisioning');
   const [employeesReadyForRevocation, setEmployeesReadyForRevocation] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -439,3 +440,4 @@ export function SystemAdminDashboard() {
     </Stack>
   );
 }
+

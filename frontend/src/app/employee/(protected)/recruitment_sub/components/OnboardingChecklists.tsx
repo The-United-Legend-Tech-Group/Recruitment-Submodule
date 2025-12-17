@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { recruitmentApi, OnboardingTaskDto } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import {
   Box,
   Stack,
@@ -55,6 +55,7 @@ const SYSTEM_ROLES = [
 ];
 
 export function OnboardingChecklists() {
+  const toast = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedChecklist, setSelectedChecklist] = useState<any>(null);
@@ -776,3 +777,4 @@ export function OnboardingChecklists() {
     </Stack>
   );
 }
+

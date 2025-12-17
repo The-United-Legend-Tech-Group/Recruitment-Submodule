@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { offboardingApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import {
   Box,
   Stack,
@@ -37,6 +37,7 @@ import {
 } from '@mui/icons-material';
 
 export function OffboardingClearance() {
+  const toast = useToast();
   const [offboardingData, setOffboardingData] = useState<any[]>([]);
   const [terminationRequests, setTerminationRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -699,3 +700,4 @@ export function OffboardingClearance() {
     </Stack>
   );
 }
+

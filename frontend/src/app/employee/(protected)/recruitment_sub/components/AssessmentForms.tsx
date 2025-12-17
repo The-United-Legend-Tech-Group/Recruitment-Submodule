@@ -21,7 +21,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface Assessment {
   _id: string;
@@ -39,6 +39,7 @@ interface AssessmentFormData {
 }
 
 export function AssessmentForms() {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
@@ -363,3 +364,4 @@ export function AssessmentForms() {
     </Stack>
   );
 }
+

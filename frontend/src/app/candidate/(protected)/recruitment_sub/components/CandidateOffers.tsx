@@ -30,13 +30,14 @@ import {
   Warning as WarningIcon
 } from '@mui/icons-material';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface CandidateOffersProps {
   // No props needed
 }
 
 export function CandidateOffers({ }: CandidateOffersProps) {
+  const toast = useToast();
   const [offers, setOffers] = useState<any[]>([]);
   const [selectedOffer, setSelectedOffer] = useState<any>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);

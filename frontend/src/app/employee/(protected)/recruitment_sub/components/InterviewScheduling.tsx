@@ -24,7 +24,7 @@ import {
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface InterviewFormData {
   applicationId: string;
@@ -36,6 +36,7 @@ interface InterviewFormData {
 }
 
 export function InterviewScheduling() {
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [panelInput, setPanelInput] = useState('');
@@ -348,3 +349,4 @@ export function InterviewScheduling() {
     </Box>
   );
 }
+

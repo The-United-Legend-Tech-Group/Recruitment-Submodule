@@ -21,9 +21,10 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import CloseIcon from '@mui/icons-material/Close';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function JobTemplates() {
+  const toast = useToast();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -309,3 +310,4 @@ export function JobTemplates() {
     </Stack>
   );
 }
+

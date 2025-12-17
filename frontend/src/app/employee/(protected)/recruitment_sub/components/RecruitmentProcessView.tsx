@@ -22,7 +22,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import CloseIcon from '@mui/icons-material/Close';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 interface Application {
   _id: string;
@@ -85,6 +85,7 @@ const STAGE_CONFIG = {
 };
 
 export function RecruitmentProcessView() {
+  const toast = useToast();
   const [jobs, setJobs] = useState<JobRequisition[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedJobs, setExpandedJobs] = useState<Set<string>>(new Set());
@@ -503,3 +504,4 @@ export function RecruitmentProcessView() {
     </Stack>
   );
 }
+

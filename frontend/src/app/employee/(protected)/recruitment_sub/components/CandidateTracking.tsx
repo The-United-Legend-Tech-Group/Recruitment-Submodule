@@ -32,9 +32,10 @@ import EmailIcon from '@mui/icons-material/Email';
 import CloseIcon from '@mui/icons-material/Close';
 import { recruitmentApi } from '@/lib/api';
 import { useMutation } from '@/lib/hooks/useApi';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function CandidateTracking() {
+  const toast = useToast();
   const [showTagModal, setShowTagModal] = useState(false);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
@@ -597,3 +598,4 @@ export function CandidateTracking() {
     </Stack>
   );
 }
+

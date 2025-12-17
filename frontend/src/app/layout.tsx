@@ -5,6 +5,7 @@ import InitColorSchemeScript from '@mui/material/InitColorSchemeScript';
 import AppTheme from '../common/material-ui/shared-theme/AppTheme';
 import ModeSwitch from '@/components/ModeSwitch';
 import { Metadata } from 'next';
+import { ToastProvider } from '@/lib/hooks/useToast';
 
 export const metadata: Metadata = {
   title: {
@@ -20,10 +21,12 @@ export default function RootLayout(props: { children: React.ReactNode }) {
         <InitColorSchemeScript attribute="data-mui-color-scheme" />
         <AppRouterCacheProvider options={{ enableCssLayer: true }}>
           <AppTheme>
-            {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
-            <CssBaseline />
-            {/* <ModeSwitch /> */}
-            {props.children}
+            <ToastProvider>
+              {/* CssBaseline kickstart an elegant, consistent, and simple baseline to build upon. */}
+              <CssBaseline />
+              {/* <ModeSwitch /> */}
+              {props.children}
+            </ToastProvider>
           </AppTheme>
         </AppRouterCacheProvider>
       </body>

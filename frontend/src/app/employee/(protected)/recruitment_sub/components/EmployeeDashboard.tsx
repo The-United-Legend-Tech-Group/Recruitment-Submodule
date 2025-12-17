@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { recruitmentApi, offboardingApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import { InterviewFeedback } from './InterviewFeedback';
 import {
   Box,
@@ -39,6 +39,7 @@ import { decryptData } from '../../../../../common/utils/encryption';
 import axios from 'axios'; // Ensure axios is imported or available for blob fetching
 
 export function EmployeeDashboard() {
+  const toast = useToast();
   const [showResignationForm, setShowResignationForm] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
   const [showInterviewFeedback, setShowInterviewFeedback] = useState(false);
@@ -831,3 +832,4 @@ export function EmployeeDashboard() {
     </Stack>
   );
 }
+

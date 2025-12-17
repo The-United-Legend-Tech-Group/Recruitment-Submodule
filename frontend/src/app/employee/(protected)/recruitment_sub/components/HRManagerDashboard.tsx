@@ -17,7 +17,7 @@ import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import WorkIcon from '@mui/icons-material/Work';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 import { JobTemplates } from './JobTemplates';
 import { JobRequisitions } from './JobRequisitions';
 import { RecruitmentProcessView } from './RecruitmentProcessView';
@@ -30,6 +30,7 @@ import HRContracts from './HRContracts';
 type Tab = 'overview' | 'job-templates' | 'job-requisitions' | 'recruitment' | 'offers' | 'contracts' | 'onboarding' | 'offboarding';
 
 export function HRManagerDashboard() {
+  const toast = useToast();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
 
   const stats = [
@@ -176,3 +177,4 @@ export function HRManagerDashboard() {
     </Stack>
   );
 }
+

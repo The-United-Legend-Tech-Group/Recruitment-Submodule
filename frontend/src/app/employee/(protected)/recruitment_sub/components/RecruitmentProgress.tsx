@@ -12,9 +12,10 @@ import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import PeopleIcon from '@mui/icons-material/People';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function RecruitmentProgress() {
+  const toast = useToast();
   const [loading, setLoading] = useState(true);
   const [metrics, setMetrics] = useState<any>(null);
 
@@ -198,3 +199,4 @@ export function RecruitmentProgress() {
     </Stack>
   );
 }
+

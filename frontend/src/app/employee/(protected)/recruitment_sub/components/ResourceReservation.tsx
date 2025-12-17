@@ -24,9 +24,10 @@ import LaptopIcon from '@mui/icons-material/Laptop';
 import BadgeIcon from '@mui/icons-material/Badge';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function ResourceReservation() {
+  const toast = useToast();
   const [showReserveForm, setShowReserveForm] = useState(false);
 
   const newHires = [
@@ -302,3 +303,4 @@ export function ResourceReservation() {
     </Stack>
   );
 }
+

@@ -30,10 +30,11 @@ import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
 import CloseIcon from '@mui/icons-material/Close';
 import EditIcon from '@mui/icons-material/Edit';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 // Removed unused import
 
 export function JobRequisitions() {
+  const toast = useToast();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);

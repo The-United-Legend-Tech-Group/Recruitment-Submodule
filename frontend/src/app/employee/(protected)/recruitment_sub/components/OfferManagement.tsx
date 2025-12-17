@@ -13,9 +13,10 @@ import CloseIcon from '@mui/icons-material/Close';
 import DescriptionIcon from '@mui/icons-material/Description';
 import SendIcon from '@mui/icons-material/Send';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function OfferManagement() {
+  const toast = useToast();
   const [selectedOffer, setSelectedOffer] = useState<any | null>(null);
   const [pendingOffers, setPendingOffers] = useState<any[]>([]);
   const [offerHistory, setOfferHistory] = useState<any[]>([]);
@@ -266,3 +267,4 @@ export function OfferManagement() {
     </Stack>
   );
 }
+

@@ -21,9 +21,10 @@ import Alert from '@mui/material/Alert';
 import EmailIcon from '@mui/icons-material/Email';
 import DescriptionIcon from '@mui/icons-material/Description';
 import { recruitmentApi } from '@/lib/api';
-import { toast } from 'sonner';
+import { useToast } from '@/lib/hooks/useToast';
 
 export function RejectionNotifications() {
+  const toast = useToast();
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [pendingRejections, setPendingRejections] = useState<any[]>([]);
@@ -290,3 +291,4 @@ export function RejectionNotifications() {
     </Stack>
   );
 }
+
