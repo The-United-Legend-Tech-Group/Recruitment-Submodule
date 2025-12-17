@@ -296,25 +296,32 @@ export function JobRequisitions() {
           <Stack spacing={3} component="form" onSubmit={handleSubmit}>
             {!editingRequisition && (
               <>
-                <TextField
-                  label="Requisition ID"
-                  value={formData.requisitionId}
-                  onChange={(e) =>
-                    setFormData({ ...formData, requisitionId: e.target.value })
-                  }
-                  placeholder="e.g., REQ-2024-001"
-                  required
-                  fullWidth
-                />
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Requisition ID</Typography>
+                  <TextField
+                    fullWidth
+                    variant="outlined"
+                    value={formData.requisitionId}
+                    onChange={(e) =>
+                      setFormData({ ...formData, requisitionId: e.target.value })
+                    }
+                    placeholder="e.g., REQ-2024-001"
+                    required
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
+                  />
+                </Box>
 
-                <FormControl fullWidth required>
-                  <InputLabel>Job Template</InputLabel>
+                <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Job Template</Typography>
                   <Select
+                    fullWidth
                     value={formData.templateId}
                     onChange={(e) =>
                       setFormData({ ...formData, templateId: e.target.value })
                     }
-                    label="Job Template"
+                    displayEmpty
+                    variant="outlined"
+                    sx={{ '& .MuiSelect-select': { padding: '10px 12px' } }}
                   >
                     <MenuItem value="">Select a template</MenuItem>
                     {templates.map((template) => (
@@ -323,7 +330,7 @@ export function JobRequisitions() {
                       </MenuItem>
                     ))}
                   </Select>
-                </FormControl>
+                </Box>
               </>
             )}
 
@@ -339,67 +346,86 @@ export function JobRequisitions() {
             )}
 
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-              <TextField
-                label="Number of Openings"
-                type="number"
-                inputProps={{ min: 1 }}
-                value={formData.openings}
-                onChange={(e) =>
-                  setFormData({ ...formData, openings: parseInt(e.target.value) })
-                }
-                required
-                fullWidth
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Number of Openings</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  type="number"
+                  inputProps={{ min: 1 }}
+                  value={formData.openings}
+                  onChange={(e) =>
+                    setFormData({ ...formData, openings: parseInt(e.target.value) })
+                  }
+                  required
+                  sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
+                />
+              </Box>
 
-              <TextField
-                label="Location"
-                value={formData.location}
-                onChange={(e) =>
-                  setFormData({ ...formData, location: e.target.value })
-                }
-                placeholder="e.g., New York, NY"
-                required
-                fullWidth
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Location</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  value={formData.location}
+                  onChange={(e) =>
+                    setFormData({ ...formData, location: e.target.value })
+                  }
+                  placeholder="e.g., New York, NY"
+                  required
+                  sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
+                />
+              </Box>
             </Box>
 
-            <FormControl fullWidth required>
-              <InputLabel>Publish Status</InputLabel>
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1 }}>Publish Status</Typography>
               <Select
+                fullWidth
                 value={formData.publishStatus}
                 onChange={(e) =>
                   setFormData({ ...formData, publishStatus: e.target.value })
                 }
-                label="Publish Status"
+                displayEmpty
+                variant="outlined"
+                sx={{ '& .MuiSelect-select': { padding: '10px 12px' } }}
               >
                 <MenuItem value="draft">Draft</MenuItem>
                 <MenuItem value="published">Published</MenuItem>
                 <MenuItem value="closed">Closed</MenuItem>
               </Select>
-            </FormControl>
+            </Box>
 
             <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
-              <TextField
-                label="Posting Date"
-                type="datetime-local"
-                value={formData.postingDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, postingDate: e.target.value })
-                }
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Posting Date</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  type="datetime-local"
+                  value={formData.postingDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, postingDate: e.target.value })
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
+                />
+              </Box>
 
-              <TextField
-                label="Expiry Date"
-                type="datetime-local"
-                value={formData.expiryDate}
-                onChange={(e) =>
-                  setFormData({ ...formData, expiryDate: e.target.value })
-                }
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-              />
+              <Box>
+                <Typography variant="body2" sx={{ mb: 1 }}>Expiry Date</Typography>
+                <TextField
+                  fullWidth
+                  variant="outlined"
+                  type="datetime-local"
+                  value={formData.expiryDate}
+                  onChange={(e) =>
+                    setFormData({ ...formData, expiryDate: e.target.value })
+                  }
+                  InputLabelProps={{ shrink: true }}
+                  sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
+                />
+              </Box>
             </Box>
           </Stack>
         </DialogContent>

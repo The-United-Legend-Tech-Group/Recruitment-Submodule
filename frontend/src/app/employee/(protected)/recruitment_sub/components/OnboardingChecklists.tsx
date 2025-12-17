@@ -630,37 +630,43 @@ export function OnboardingChecklists() {
             <Stack spacing={3} sx={{ mt: 1 }}>
               <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
                 <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Employee Number</Typography>
                   <TextField
-                    label="Employee Number"
+                    fullWidth
+                    variant="outlined"
                     value={employeeId}
                     onChange={(e) => setEmployeeId(e.target.value)}
                     placeholder="Enter employee number (e.g. EMP-1001)"
                     required
-                    fullWidth
                     helperText="Required"
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
                   />
                 </Box>
 
                 <Box>
+                  <Typography variant="body2" sx={{ mb: 1 }}>Contract ID</Typography>
                   <TextField
-                    label="Contract ID"
+                    fullWidth
+                    variant="outlined"
                     value={contractId}
                     onChange={(e) => setContractId(e.target.value)}
                     placeholder="Enter contract ID"
-                    fullWidth
                     helperText="Required only for new checklists"
+                    sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
                   />
                 </Box>
               </Box>
 
+              <Typography variant="body2" sx={{ mb: 1 }}>General Notes</Typography>
               <TextField
-                label="General Notes"
+                fullWidth
+                variant="outlined"
                 multiline
-                rows={2}
+                rows={1}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add any general notes for the onboarding checklist"
-                fullWidth
+                sx={{ '& .MuiInputBase-input': { padding: '10px 12px' } }}
               />
 
               <Box>
@@ -689,55 +695,69 @@ export function OnboardingChecklists() {
 
                       <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1.5 }}>
                         <Box>
+                          <Typography variant="body2" sx={{ mb: 1 }}>Task Name</Typography>
                           <TextField
-                            label="Task Name"
+                            fullWidth
+                            variant="outlined"
+                            size="small"
                             value={task.name}
                             onChange={(e) => updateTask(task.id, 'name', e.target.value)}
                             placeholder="e.g. Complete IT setup"
                             required
-                            fullWidth
-                            size="small"
                             helperText="Required"
+                            sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
                           />
                         </Box>
 
                         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 1.5 }}>
-                          <FormControl fullWidth size="small">
-                            <InputLabel>Department</InputLabel>
-                            <Select
-                              value={task.department || ''}
-                              label="Department"
-                              onChange={(e) => updateTask(task.id, 'department', e.target.value)}
-                            >
-                              {SYSTEM_ROLES.map((role) => (
-                                <MenuItem key={role} value={role}>
-                                  {role}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          </FormControl>
+                          <Box>
+                            <Typography variant="body2" sx={{ mb: 1 }}>Department</Typography>
+                            <FormControl fullWidth size="small">
+                              <Select
+                                value={task.department || ''}
+                                onChange={(e) => updateTask(task.id, 'department', e.target.value)}
+                                displayEmpty
+                                variant="outlined"
+                                size="small"
+                                sx={{ '& .MuiSelect-select': { padding: '8px 10px' } }}
+                              >
+                                <MenuItem value="">Select department...</MenuItem>
+                                {SYSTEM_ROLES.map((role) => (
+                                  <MenuItem key={role} value={role}>
+                                    {role}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Box>
 
-                          <TextField
-                            label="Deadline"
-                            type="date"
-                            value={task.deadline || ''}
-                            onChange={(e) => updateTask(task.id, 'deadline', e.target.value)}
-                            fullWidth
-                            size="small"
-                            InputLabelProps={{ shrink: true }}
-                          />
+                          <Box>
+                            <Typography variant="body2" sx={{ mb: 1 }}>Deadline</Typography>
+                            <TextField
+                              fullWidth
+                              variant="outlined"
+                              type="date"
+                              value={task.deadline || ''}
+                              onChange={(e) => updateTask(task.id, 'deadline', e.target.value)}
+                              size="small"
+                              InputLabelProps={{ shrink: true }}
+                              sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
+                            />
+                          </Box>
                         </Box>
 
                         <Box>
+                          <Typography variant="body2" sx={{ mb: 1 }}>Notes</Typography>
                           <TextField
-                            label="Notes"
+                            fullWidth
+                            variant="outlined"
                             multiline
-                            rows={2}
+                            rows={1}
                             value={task.notes || ''}
                             onChange={(e) => updateTask(task.id, 'notes', e.target.value)}
                             placeholder="Add any notes for this task"
-                            fullWidth
                             size="small"
+                            sx={{ '& .MuiInputBase-input': { padding: '8px 10px' } }}
                           />
                         </Box>
                       </Box>
