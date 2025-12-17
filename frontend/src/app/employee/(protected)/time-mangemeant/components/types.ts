@@ -1,7 +1,10 @@
+import type { ReactNode } from "react";
+
 export type SectionDefinition = {
   id: string;
   title: string;
   description: string;
+  icon?: ReactNode;
 };
 
 export enum PunchType {
@@ -31,6 +34,14 @@ export enum TimeExceptionStatus {
   REJECTED = "REJECTED",
   ESCALATED = "ESCALATED",
   RESOLVED = "RESOLVED",
+}
+
+export enum CorrectionRequestStatus {
+  SUBMITTED = "SUBMITTED",
+  IN_REVIEW = "IN_REVIEW",
+  APPROVED = "APPROVED",
+  REJECTED = "REJECTED",
+  ESCALATED = "ESCALATED",
 }
 
 export interface Punch {
@@ -125,14 +136,6 @@ export interface HolidayDefinition {
   description?: string;
 }
 
-export enum CorrectionRequestStatus {
-  SUBMITTED = "SUBMITTED",
-  IN_REVIEW = "IN_REVIEW",
-  APPROVED = "APPROVED",
-  REJECTED = "REJECTED",
-  ESCALATED = "ESCALATED",
-}
-
 export interface CorrectionRequest {
   _id: string;
   employeeId: string;
@@ -154,4 +157,35 @@ export interface CorrectionRequest {
     decidedBy?: string;
     decidedAt?: string;
   }>;
+}
+
+// DTO Types matching backend
+export interface SubmitCorrectionEssDto {
+  employeeId: string;
+  attendanceRecord: string;
+  durationMinutes: number;
+  reason: string;
+  lineManagerId: string;
+  appliesFromDate?: string;
+  correctionType?: "ADD" | "DEDUCT";
+}
+
+export interface CreateAttendanceCorrectionDto {
+  employeeId: string;
+  attendanceRecord: string;
+  punches?: Punch[];
+  reason?: string;
+  source?: "BIOMETRIC" | "WEB" | "MOBILE" | "MANUAL";
+}
+
+export interface ApproveRejectCorrectionDto {
+  approverId: string;
+  decision: "APPROVED" | "REJECTED";
+  approverRole?: string;
+  rejectionReason?: string;
+  applyToPayroll?: boolean;
+}
+
+export interface ApproveAttendanceCorrectionDto {
+  approverId: string;
 }

@@ -55,6 +55,8 @@ export default function AssignEmployeeForm({
     const [submitting, setSubmitting] = React.useState(false);
     const [error, setError] = React.useState<string | null>(null);
     const [selectedEmployeeId, setSelectedEmployeeId] = React.useState<string | null>(null);
+    const [startDate, setStartDate] = React.useState<string>(new Date().toISOString().split('T')[0]);
+    const [endDate, setEndDate] = React.useState<string>('');
 
     // Debounce search
     const [debouncedSearchQuery, setDebouncedSearchQuery] = React.useState('');
@@ -113,7 +115,7 @@ export default function AssignEmployeeForm({
     };
 
     const handleAssign = async () => {
-        if (!selectedEmployeeId) return;
+        if (!selectedEmployeeId || !startDate) return;
 
         setSubmitting(true);
         setError(null);
@@ -121,13 +123,20 @@ export default function AssignEmployeeForm({
             const token = localStorage.getItem('access_token');
             const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:50000';
 
-            const response = await fetch(`${apiUrl}/employee/${selectedEmployeeId}/position`, {
-                method: 'PATCH',
+            const payload = {
+                employeeId: selectedEmployeeId,
+                positionId,
+                startDate,
+                endDate: endDate || undefined
+            };
+
+            const response = await fetch(`${apiUrl}/organization-structure/assignments`, {
+                method: 'POST', // Changed from PATCH
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ positionId })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {
@@ -159,20 +168,25 @@ export default function AssignEmployeeForm({
             {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
 
             <Stack spacing={3}>
-                <TextField
-                    placeholder="Search employees by name, ID or email..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    fullWidth
-                    InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon color="action" />
-                            </InputAdornment>
-                        ),
-                        endAdornment: loading ? <CircularProgress size={20} /> : null
-                    }}
-                />
+                <Box>
+                    <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                        Select Employee
+                    </Typography>
+                    <TextField
+                        placeholder="Search employees by name, ID or email..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        fullWidth
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon color="action" />
+                                </InputAdornment>
+                            ),
+                            endAdornment: loading ? <CircularProgress size={20} /> : null
+                        }}
+                    />
+                </Box>
 
                 <Paper variant="outlined" sx={{ maxHeight: 300, overflow: 'auto' }}>
                     <List>
@@ -223,6 +237,34 @@ export default function AssignEmployeeForm({
                     </List>
                 </Paper>
 
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ width: '100%' }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                            Start Date
+                        </Typography>
+                        <TextField
+                            type="date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            required
+                            fullWidth
+                            InputLabelProps={{ shrink: true }}
+                        />
+                    </Box>
+                    <Box sx={{ width: '100%' }}>
+                        <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                            End Date (Optional)
+                        </Typography>
+                        <TextField
+                            type="date"
+                            value={endDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            fullWidth
+                            InputLabelProps={{ shrink: true }}
+                        />
+                    </Box>
+                </Box>
+
                 <Stack direction="row" spacing={2} justifyContent="flex-end">
                     <Button
                         variant="outlined"
@@ -235,7 +277,7 @@ export default function AssignEmployeeForm({
                     <Button
                         variant="contained"
                         onClick={handleAssign}
-                        disabled={!selectedEmployeeId || submitting}
+                        disabled={!selectedEmployeeId || !startDate || submitting}
                         sx={{ textTransform: 'none' }}
                     >
                         {submitting ? 'Assigning...' : 'Assign Employee'}

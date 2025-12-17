@@ -19,13 +19,14 @@ import CircularProgress from '@mui/material/CircularProgress';
 import Paper from '@mui/material/Paper';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
+import Tooltip from '@mui/material/Tooltip';
 
 // Icons
-import EmailIcon from '@mui/icons-material/Email';
 import PhoneIcon from '@mui/icons-material/Phone';
 import BadgeIcon from '@mui/icons-material/Badge';
 import PersonIcon from '@mui/icons-material/Person';
 import WorkIcon from '@mui/icons-material/Work';
+import StarIcon from '@mui/icons-material/Star';
 
 interface Employee {
     _id: string;
@@ -40,15 +41,25 @@ interface Employee {
     status: string;
     dateOfHire: string;
     profilePictureUrl?: string;
+    biography?: string;
+}
+
+interface LatestAppraisal {
+    totalScore: number | null;
+    ratingLabel: string | null;
+    cycleName: string | null;
 }
 
 import OrganizationHierarchy from './OrganizationHierarchy';
+import PerformanceOverview from './PerformanceOverview';
 import { decryptData } from '../../../../common/utils/encryption';
+import { getUserRoles } from '../../../../common/utils/cookie-utils';
 
 export default function EmployeeDashboard(props: { disableCustomTheme?: boolean }) {
     const router = useRouter();
     const [employee, setEmployee] = React.useState<Employee | null>(null);
     const [loading, setLoading] = React.useState(true);
+    const [latestAppraisal, setLatestAppraisal] = React.useState<LatestAppraisal | null>(null);
 
     React.useEffect(() => {
         const fetchEmployee = async () => {
@@ -76,6 +87,21 @@ export default function EmployeeDashboard(props: { disableCustomTheme?: boolean 
                     // Backend returns { profile: ..., systemRole: ..., performance: ... }
                     // We default to using the profile object for the dashboard view
                     setEmployee(data.profile);
+
+                    // Fetch latest appraisal score
+                    try {
+                        const appraisalRes = await fetch(`${apiUrl}/performance/records/employee/${employeeId}/latest-score`, {
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+                        if (appraisalRes.ok) {
+                            const appraisalData = await appraisalRes.json();
+                            setLatestAppraisal(appraisalData);
+                        }
+                    } catch (appraisalError) {
+                        console.warn('Failed to fetch appraisal score', appraisalError);
+                    }
                 } else {
                     console.error('Failed to fetch employee, status:', response.status);
                     router.push('/employee/login');
@@ -105,6 +131,17 @@ export default function EmployeeDashboard(props: { disableCustomTheme?: boolean 
             default:
                 return 'default';
         }
+    };
+
+    // Color mapping for appraisal scores (assumes 1-5 scale)
+    // 1 = Poor (red), 2 = Below Expectations (orange/warning), 
+    // 3 = Meets Expectations (blue/info), 4-5 = Exceeds/Outstanding (green)
+    const getAppraisalColor = (score: number | null) => {
+        if (score === null) return 'default';
+        if (score <= 1) return 'error';      // Red - Poor
+        if (score <= 2) return 'warning';    // Orange - Below Expectations
+        if (score <= 3) return 'info';       // Blue - Meets Expectations
+        return 'success';                     // Green - Exceeds/Outstanding (4-5)
     };
 
     if (loading) {
@@ -139,20 +176,48 @@ export default function EmployeeDashboard(props: { disableCustomTheme?: boolean 
                                         <Typography variant="h4" fontWeight="bold" gutterBottom>
                                             {employee?.firstName} {employee?.middleName} {employee?.lastName}
                                         </Typography>
-                                        <Chip
-                                            label={employee?.status}
-                                            color={getStatusColor(employee?.status || '') as any}
-                                            size="medium"
-                                            variant="filled"
-                                            sx={{
-                                                fontWeight: 'bold',
-                                                border: 'none',
-                                                ...(employee?.status === 'ON_LEAVE' && {
-                                                    bgcolor: '#ffface',
-                                                    color: '#666666'
-                                                })
-                                            }}
-                                        />
+                                        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                                            <Chip
+                                                label={employee?.status}
+                                                color={getStatusColor(employee?.status || '') as any}
+                                                size="medium"
+                                                variant="filled"
+                                                sx={{
+                                                    height: 30,
+                                                    fontWeight: 'bold',
+                                                    border: 'none',
+                                                    ...(employee?.status === 'ON_LEAVE' && {
+                                                        bgcolor: '#ffface',
+                                                        color: '#666666'
+                                                    })
+                                                }}
+                                            />
+                                            {latestAppraisal && latestAppraisal.totalScore !== null && (
+                                                <Tooltip title={`Latest Performance: ${latestAppraisal.cycleName || 'Recent Cycle'}`} arrow>
+                                                    <Chip
+                                                        icon={<StarIcon sx={{ fontSize: 16 }} />}
+                                                        label={latestAppraisal.ratingLabel || latestAppraisal.totalScore.toFixed(1)}
+                                                        color={getAppraisalColor(latestAppraisal.totalScore) as any}
+                                                        size="medium"
+                                                        variant="outlined"
+                                                        sx={{
+                                                            height: 30,
+                                                            fontWeight: 'bold',
+                                                        }}
+                                                    />
+                                                </Tooltip>
+                                            )}
+                                            {/* Biography - inline with status */}
+                                            {employee?.biography && (
+                                                <Typography
+                                                    variant="body2"
+                                                    color="text.secondary"
+                                                    sx={{ fontStyle: 'italic', ml: 1 }}
+                                                >
+                                                    "{employee.biography}"
+                                                </Typography>
+                                            )}
+                                        </Stack>
                                     </Box>
                                 </Box>
 
@@ -248,8 +313,37 @@ export default function EmployeeDashboard(props: { disableCustomTheme?: boolean 
                     </CardContent>
                 </Card>
 
+                {/* Performance Overview Section */}
+                <PerformanceOverview />
+
                 {/* Organization Hierarchy Section */}
                 <OrganizationHierarchy />
+
+                {/* System Roles Section */}
+                <Card variant="outlined">
+                    <CardContent>
+                        <Typography variant="h6" gutterBottom>System Roles</Typography>
+                        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2 }}>
+                            Access Level
+                        </Typography>
+                        <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                            {getUserRoles().length > 0 ? (
+                                getUserRoles().map((role, index) => (
+                                    <Chip
+                                        key={index}
+                                        label={role}
+                                        color="primary"
+                                        size="medium"
+                                        variant="outlined"
+                                        sx={{ fontWeight: 'medium' }}
+                                    />
+                                ))
+                            ) : (
+                                <Typography variant="body2" color="text.secondary">No roles assigned</Typography>
+                            )}
+                        </Stack>
+                    </CardContent>
+                </Card>
             </Stack>
         </Box >
     );

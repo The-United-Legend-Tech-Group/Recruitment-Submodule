@@ -1,5 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AppraisalAssignmentRepository } from './repository/appraisal-assignment.repository';
+import { AppraisalTemplateRepository } from './repository/appraisal-template.repository';
+import { AppraisalCycleRepository } from './repository/appraisal-cycle.repository';
 import { GetAssignmentsQueryDto, BulkAssignDto, AppraisalProgressQueryDto, SendReminderDto } from './dto/appraisal-assignment.dto';
 import { AppraisalAssignmentStatus } from './enums/performance.enums';
 import { AppraisalAssignment } from './models/appraisal-assignment.schema';
@@ -17,6 +19,8 @@ export class AppraisalAssignmentService {
         private readonly appraisalAssignmentRepository: AppraisalAssignmentRepository,
         private readonly notificationService: NotificationService,
         private readonly employeeProfileRepository: EmployeeProfileRepository,
+        private readonly appraisalTemplateRepository: AppraisalTemplateRepository,
+        private readonly appraisalCycleRepository: AppraisalCycleRepository,
     ) { }
 
     async getAssignmentsByManager(
@@ -44,6 +48,12 @@ export class AppraisalAssignmentService {
         const profileMap = new Map<string, any>();
         profiles.forEach((p: any) => profileMap.set(p._id.toString(), p));
 
+        // Fetch template and cycle details for notification
+        const template = await this.appraisalTemplateRepository.findOne({ _id: dto.templateId });
+        const cycle = await this.appraisalCycleRepository.findOne({ _id: dto.cycleId });
+        const templateName = template ? template.name : dto.templateId;
+        const cycleName = cycle ? cycle.name : dto.cycleId;
+
         const docs: Partial<AppraisalAssignment>[] = dto.items.map((it) => {
             const profile = profileMap.get(it.employeeProfileId);
             if (!profile && !it.departmentId) {
@@ -60,7 +70,7 @@ export class AppraisalAssignmentService {
                 templateId: new Types.ObjectId(dto.templateId),
                 employeeProfileId: new Types.ObjectId(it.employeeProfileId),
                 managerProfileId: new Types.ObjectId(it.managerProfileId),
-                dueDate: it.dueDate ? new Date(it.dueDate) : undefined,
+                dueDate: cycle?.managerDueDate ? new Date(cycle.managerDueDate) : (it.dueDate ? new Date(it.dueDate) : undefined),
                 assignedAt: new Date(),
             };
 
@@ -84,7 +94,7 @@ export class AppraisalAssignmentService {
                     type: 'Alert',
                     deliveryType: recipients.length > 1 ? 'MULTICAST' : 'UNICAST',
                     title: 'Appraisal Assigned',
-                    message: `Appraisal assigned using template ${dto.templateId} for cycle ${dto.cycleId}`,
+                    message: `Appraisal assigned using template ${templateName} for cycle ${cycleName}`,
                     relatedEntityId: c._id?.toString(),
                     relatedModule: 'Performance',
                 };

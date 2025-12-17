@@ -3,11 +3,10 @@ import * as React from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
-import Grid from '@mui/material/Grid';
 import PageContainer from '../../../../../../common/material-ui/crud-dashboard/components/PageContainer';
 import EmployeeEditForm from '../EmployeeEditForm';
-import EmployeeRoleForm from './EmployeeRoleForm';
 import DialogsProvider from '../../../../../../common/material-ui/crud-dashboard/hooks/useDialogs/DialogsProvider';
 import NotificationsProvider from '../../../../../../common/material-ui/crud-dashboard/hooks/useNotifications/NotificationsProvider';
 
@@ -57,7 +56,17 @@ function EmployeeEditContent() {
 
             if (response.ok) {
                 const data = await response.json();
-                setEmployee(data.profile || data);
+                // Backend returns { profile: ..., systemRole: { roles: [...], permissions: [...] } }
+                const employeeData = data.profile || data;
+                if (data.systemRole) {
+                    if (data.systemRole.roles) {
+                        employeeData.roles = data.systemRole.roles;
+                    }
+                    if (data.systemRole.permissions) {
+                        employeeData.permissions = data.systemRole.permissions;
+                    }
+                }
+                setEmployee(employeeData);
             } else {
                 console.error('Failed to fetch employee', response.status);
                 setError('Failed to load employee details');
@@ -86,15 +95,35 @@ function EmployeeEditContent() {
 
     if (error || !employee) {
         return (
-            <PageContainer
-                title="Error"
-                breadcrumbs={[
-                    { title: 'Employees', path: '/employee/manage-employees' },
-                    { title: 'Error' },
-                ]}
-            >
-                <Alert severity="error">{error || 'Employee not found'}</Alert>
-            </PageContainer>
+            <>
+                <PageContainer
+                    title="Edit Employee"
+                    breadcrumbs={[
+                        { title: 'Employees', path: '/employee/manage-employees' },
+                        { title: 'Edit' },
+                    ]}
+                >
+                    <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+                        <CircularProgress />
+                    </Box>
+                </PageContainer>
+
+                <Snackbar
+                    open={!!error}
+                    autoHideDuration={6000}
+                    onClose={() => setError('')}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                >
+                    <Alert
+                        onClose={() => setError('')}
+                        severity="error"
+                        variant="filled"
+                        sx={{ width: '100%' }}
+                    >
+                        {error || 'Employee not found'}
+                    </Alert>
+                </Snackbar>
+            </>
         );
     }
 
@@ -107,15 +136,6 @@ function EmployeeEditContent() {
             ]}
         >
             <Box sx={{ width: '100%', maxWidth: { sm: '100%', md: '1700px' } }}>
-                <Grid container spacing={3} sx={{ mb: 3 }}>
-                    <Grid size={{ xs: 12 }}>
-                        <EmployeeRoleForm
-                            employeeId={employee._id}
-                            currentRoles={employee.roles || []}
-                            onUpdate={fetchEmployee}
-                        />
-                    </Grid>
-                </Grid>
                 <EmployeeEditForm employee={employee} onUpdate={fetchEmployee} />
             </Box>
         </PageContainer>

@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
 
 import { DocumentDocument } from './models/document.schema';
 
@@ -21,9 +22,10 @@ import { ApproveOfferDto } from './DTO/approve-offer.dto';
 import { SendOfferDto } from './DTO/send-offer.dto';
 import { CandidateRespondOfferDto } from './DTO/candidate-respond-offer.dto';
 import { EmployeeService } from '../employee-subsystem/employee/employee.service';
-import { ConfigSetupService } from '../payroll/config_setup/config_setup.service';
-import { EmployeeSigningBonusService } from '../payroll/execution/services/EmployeesigningBonus.service';
+//import { PayrollExecutionService } from '../payroll-execution/payroll-execution.service';
 
+import { signingBonus, signingBonusDocument } from '../payroll/config_setup/models/signingBonus.schema';
+import { payGrade, payGradeDocument } from '../payroll/config_setup/models/payGrades.schema';
 import { OfferResponseStatus } from './enums/offer-response-status.enum';
 import { OfferFinalStatus } from './enums/offer-final-status.enum';
 
@@ -36,15 +38,13 @@ import { ApplicationDocument } from './models/application.schema';
 import { InterviewDocument } from './models/interview.schema';
 //import { EmployeeProfileDocument } from '../employee-subsystem/employee/models/employee-profile.schema';
 import { ReferralDocument } from './models/referral.schema';
-import { OfferDocument } from './models/offer.schema';
-import { ContractDocument } from './models/contract.schema';
 
 import { NotificationService } from '../employee-subsystem/notification/notification.service';
 import { ApplicationStage } from './enums/application-stage.enum';
 import { ApplicationStatus } from './enums/application-status.enum';
 import { InterviewStatus } from './enums/interview-status.enum';
 import { InterviewMethod } from './enums/interview-method.enum';
-import { /*SystemRole, EmployeeStatus,*/ CandidateStatus, SystemRole } from '../employee-subsystem/employee/enums/employee-profile.enums';
+import { /*SystemRole, EmployeeStatus,*/ CandidateStatus } from '../employee-subsystem/employee/enums/employee-profile.enums';
 import type { UpdateCandidateStatusDto } from '../employee-subsystem/employee/dto/update-candidate-status.dto';
 
 import { CreateJobTemplateDto } from './dtos/create-job-template.dto';
@@ -57,10 +57,11 @@ import { CreateInterviewDto } from './dtos/create-interview.dto';
 import { CreateNotificationDto } from '../employee-subsystem/notification/dto/create-notification.dto';
 import { UpdateInterviewDto } from './dtos/Update-interview.dto';
 import { CreateReferralDto } from './dtos/create-referral.dto';
-import { CreateAssessmentDto } from './dtos/create-assessment.dto';
+
 
 //import { EmployeeProfileRepository } from '../employee-subsystem/employee/repository/employee-profile.repository';
 import { CandidateRepository } from '../employee-subsystem/employee/repository/candidate.repository';
+//import { EmployeeSystemRoleRepository } from '../employee-subsystem/employee/repository/employee-system-role.repository';
 
 // Repository implementations
 import {
@@ -73,14 +74,15 @@ import {
   ApplicationHistoryRepository,
   OfferRepository,
   ContractRepository,
-  OnboardingRepository,
-  AssessmentResultRepository
+  OnboardingRepository
 } from './repositories';
-import { AssessmentResultDocument } from './models/assessment-result.schema';
 
 @Injectable()
 export class RecruitmentService {
   constructor(
+    @InjectModel(Notification.name) private notificationModel: mongoose.Model<Notification>,
+    @InjectModel(signingBonus.name) private signingBonusModel: mongoose.Model<signingBonusDocument>,
+    @InjectModel(payGrade.name) private payGradeModel: mongoose.Model<payGradeDocument>,
     private readonly employeeService: EmployeeService,
     // Repository dependencies
     private readonly jobTemplateRepository: JobTemplateRepository,
@@ -93,15 +95,11 @@ export class RecruitmentService {
     private readonly offerRepository: OfferRepository,
     private readonly contractRepository: ContractRepository,
     private readonly onboardingRepository: OnboardingRepository,
-    private readonly assessmentResultRepository: AssessmentResultRepository,
 
     private readonly notificationService: NotificationService,
     // private readonly employeeProfileRepository: EmployeeProfileRepository,
     private readonly candidateRepository: CandidateRepository,
     //private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
-    //   private readonly employeeSystemRoleRepository: EmployeeSystemRoleRepository,
-    private readonly configSetupService: ConfigSetupService,
-    private readonly employeeSigningBonusService: EmployeeSigningBonusService,
     //private payrollExecutionService: PayrollExecutionService,
   ) { }
 
@@ -110,32 +108,14 @@ export class RecruitmentService {
   async createOffer(dto: CreateOfferDto) {
     const { applicationId, candidateId, hrEmployeeId, role, benefits, conditions, insurances, content, deadline } = dto;
 
-    // Validate application exists
-    const application = await this.applicationRepository.findById(applicationId);
-    if (!application) {
-      throw new NotFoundException(`Application with id ${applicationId} not found`);
-    }
-
-    // Validate candidate exists
-    const isCandidateValid = await this.validateCandidateExistence(candidateId);
-    if (!isCandidateValid) {
-      throw new NotFoundException(`Candidate with id ${candidateId} is not valid or not active`);
-    }
-
-    // Validate HR employee exists and has proper role
-    /*const isValidHR = await this.validateEmployeeExistence(hrEmployeeId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE]);
-    if (!isValidHR) {
-      throw new NotFoundException(`HR Employee with id ${hrEmployeeId} is not valid or not active`);
-    }*/
-
     // Lookup signing bonus by role/position from payroll configuration
-    const bonusConfig = await this.configSetupService.signingBonus.findOne({
+    const bonusConfig = await this.signingBonusModel.findOne({
       positionName: role,
       status: 'approved'
     });
 
     // Lookup gross salary by role/position from payroll configuration
-    const salaryConfig = await this.configSetupService.payGrade.findOne({
+    const salaryConfig = await this.payGradeModel.findOne({
       grade: role,
       status: 'approved'
     });
@@ -183,12 +163,6 @@ export class RecruitmentService {
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
-    /*
-        // Validate employee exists and is active
-        const isValidEmployee = await this.validateEmployeeExistence(employeeId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE, SystemRole.DEPARTMENT_HEAD, SystemRole.PAYROLL_MANAGER]);
-        if (!isValidEmployee) {
-          throw new NotFoundException(`Employee with id ${employeeId} is not valid or not active`);
-        }*/
 
     // Check if approver already exists
     const existingApprover = offer.approvers.find(
@@ -226,12 +200,6 @@ export class RecruitmentService {
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
-    /*
-        // Validate employee exists and is active
-        const isValidEmployee = await this.validateEmployeeExistence(employeeId, [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE, SystemRole.DEPARTMENT_HEAD, SystemRole.PAYROLL_MANAGER]);
-        if (!isValidEmployee) {
-          throw new NotFoundException(`Employee with id ${employeeId} is not valid or not active`);
-        }*/
 
     // Find the approver in the list
     const approver = offer.approvers.find(
@@ -282,13 +250,7 @@ export class RecruitmentService {
     if (!offer) {
       throw new NotFoundException('Offer not found');
     }
-    /*
-        // Validate HR employee who created the offer still exists and is active
-        const isValidHR = await this.validateEmployeeExistence(offer.hrEmployeeId.toString(), [SystemRole.HR_MANAGER, SystemRole.HR_ADMIN, SystemRole.HR_EMPLOYEE]);
-        if (!isValidHR) {
-          throw new NotFoundException(`HR Employee who created this offer (${offer.hrEmployeeId}) is not valid or not active`);
-        }
-    */
+
     // Check if all required approvals are obtained
     if (offer.approvers.length > 0) {
       const allApproved = offer.approvers.every(a => a.status === 'approved');
@@ -307,8 +269,8 @@ export class RecruitmentService {
     );
 
     // TODO: Send email/notification to candidate with offer letter
-    await this.notificationService.create({
-      recipientId: [offer.candidateId.toString()],
+    const notification = new this.notificationModel({
+      recipientId: [new mongoose.Types.ObjectId(offer.candidateId.toString())],
       type: 'Info',
       deliveryType: 'UNICAST',
       title: 'Job Offer Sent',
@@ -316,6 +278,7 @@ export class RecruitmentService {
       relatedModule: 'Recruitment',
       isRead: false,
     });
+    await notification.save();
 
     return {
       success: true,
@@ -363,8 +326,8 @@ export class RecruitmentService {
       await this.contractRepository.create(contractData);
 
       // Send notification
-      await this.notificationService.create({
-        recipientId: [offer.hrEmployeeId.toString()],
+      const notification = new this.notificationModel({
+        recipientId: [new mongoose.Types.ObjectId(offer.hrEmployeeId.toString())],
         type: 'Success',
         deliveryType: 'UNICAST',
         title: 'Offer Accepted',
@@ -372,6 +335,7 @@ export class RecruitmentService {
         relatedModule: 'Recruitment',
         isRead: false,
       });
+      await notification.save();
 
     } else if (response === 'rejected') {
       offer.finalStatus = OfferFinalStatus.REJECTED;
@@ -383,8 +347,8 @@ export class RecruitmentService {
       );
 
       // Notify HR
-      await this.notificationService.create({
-        recipientId: [offer.hrEmployeeId.toString()],
+      const notification = new this.notificationModel({
+        recipientId: [new mongoose.Types.ObjectId(offer.hrEmployeeId.toString())],
         type: 'Warning',
         deliveryType: 'UNICAST',
         title: 'Offer Rejected',
@@ -392,6 +356,7 @@ export class RecruitmentService {
         relatedModule: 'Recruitment',
         isRead: false,
       });
+      await notification.save();
     }
 
     await offer.save();
@@ -412,36 +377,12 @@ export class RecruitmentService {
       throw new NotFoundException('Contract not found');
     }
 
-    // Validate candidate exists
-    if (!candidateId) {
-      throw new BadRequestException('Candidate ID is required to sign contract');
-    }
-
-    const isCandidateValid = await this.validateCandidateExistence(candidateId);
-    if (!isCandidateValid) {
-      throw new NotFoundException(`Candidate with id ${candidateId} is not valid or not active`);
-    }
-
-    // Get the offer associated with this contract to verify candidate ownership
-    const offer = await this.offerRepository.findById(contract.offerId?.toString());
-
-    if (!offer) {
-      throw new NotFoundException('Offer associated with this contract not found');
-    }
-
-    // Verify that the candidate signing is the same candidate who received the offer
-    const offerCandidateId = offer.candidateId?.toString();
-    if (!offerCandidateId) {
-      throw new BadRequestException('Offer does not have a valid candidate ID');
-    }
-
-    if (offerCandidateId !== candidateId) {
-      throw new BadRequestException('This contract does not belong to you. You can only sign your own contract.');
-    }
-
-    // Validate that at least one contract document is provided
     if (!files || files.length === 0) {
-      throw new BadRequestException('At least one contract document must be uploaded when signing the contract');
+      // nothing to attach — simply update signedAt if provided
+      const updatedContract = await this.contractRepository.updateById(contractId, {
+        employeeSignedAt: signedAt ? new Date(signedAt) : new Date()
+      });
+      return updatedContract;
     }
 
     // determine which file is the main signed contract
@@ -494,7 +435,7 @@ export class RecruitmentService {
   // need guards for auth and roles
   //ONB-001
   async hrSignContract(dto: HrSignContractDto) {
-    const { contractId, hrEmployeeId, signedAt, useCustomEmployeeData } = dto;
+    const { contractId, hrEmployeeId, signedAt } = dto;
 
     const contract = await this.contractRepository.findById(contractId);
     if (!contract) {
@@ -505,94 +446,52 @@ export class RecruitmentService {
       throw new BadRequestException('Employee must sign the contract first');
     }
 
+    const updateData: any = {
+      employerSignedAt: signedAt ? new Date(signedAt) : new Date()
+    };
+
+    // optionally store which HR employee signed
+    if (hrEmployeeId) {
+      updateData.employerSignatureUrl = `hr-signed-by-${hrEmployeeId}`;
+    }
+
+    await this.contractRepository.updateById(contractId, updateData);
+
     // Get candidateId from the offer for onboarding and bonus processing
-    if (!contract?.offerId) {
-      throw new NotFoundException('Contract does not have an associated offer');
-    }
-
-    // Fetch the offer to get candidate information
-    const offer = await this.offerRepository.findById(contract.offerId.toString());
-
-    if (!offer) {
-      throw new NotFoundException('Offer associated with this contract not found');
-    }
+    const populatedContract = await this.contractRepository.findById(contractId);
+    const offer = populatedContract?.offerId as any;
 
     // Automatically trigger onboarding when BOTH employee and HR have signed
-    if (offer.candidateId) {
-      // Fetch the candidate details
-      const candidate = await this.candidateRepository.findById(offer.candidateId.toString());
-
-      if (!candidate) {
-        throw new NotFoundException('Candidate associated with this offer not found');
-      }
+    if (offer?.candidateId) {
+      const candidate = offer.candidateId;
 
       // Update candidate status to HIRED
       await this.employeeService.updateCandidateStatus(
-        offer.candidateId.toString(),
+        candidate._id ? candidate._id.toString() : candidate.toString(),
         { status: CandidateStatus.HIRED } as UpdateCandidateStatusDto
       );
 
-      // Create employee profile using either custom data or candidate's data
-      let employeeData: any;
-
-      if (useCustomEmployeeData) {
-        // Use custom employee data provided by HR
-        employeeData = {
-          firstName: dto.customFirstName || candidate.firstName || 'New',
-          lastName: dto.customLastName || candidate.lastName || 'Employee',
-          nationalId: dto.customNationalId || candidate.nationalId,
-          employeeNumber: dto.customEmployeeNumber || `EMP-${candidate.candidateNumber.slice(4)}`,
-          dateOfHire: new Date(),
-          workEmail: dto.customWorkEmail || candidate.personalEmail,
-          personalEmail: dto.customPersonalEmail || candidate.personalEmail || dto.customWorkEmail,
-          status: dto.customStatus || 'PROBATION' as any,
-          contractStartDate: new Date(),
-          contractType: dto.customContractType || 'FULL_TIME_CONTRACT' as any,
-          workType: dto.customWorkType || 'FULL_TIME' as any,
-        };
-      } else {
-        // Use candidate's data (default behavior)
-        employeeData = {
-          firstName: candidate.firstName || 'New',
-          lastName: candidate.lastName || 'Employee',
-          nationalId: candidate.nationalId,
-          employeeNumber: `EMP-${candidate.candidateNumber.slice(4)}`,
-          dateOfHire: new Date(),
-          workEmail: candidate.personalEmail,
-          personalEmail: candidate.personalEmail,
-          status: 'PROBATION' as any,
-          contractStartDate: new Date(),
-          contractType: 'FULL_TIME_CONTRACT' as any,
-          workType: 'FULL_TIME' as any,
-        };
-      }
-
-      // Validate that employee has a national ID
-      if (!employeeData.nationalId) {
-        throw new BadRequestException('Employee must have a national ID before creating employee profile');
-      }
-
-      // Check if employee already exists with this national ID or employee number
-      let employeeProfileId: string;
-      try {
-        const createdEmployee = await this.employeeService.onboard(employeeData);
-        employeeProfileId = String((createdEmployee as any)._id || (createdEmployee as any).id);
-      } catch (error) {
-        // Re-throw the error from employee service (already formatted as BadRequestException)
-        throw error;
-      }
-
-      // ONLY sign the contract AFTER successful employee creation
-      const updateData: any = {
-        employerSignedAt: signedAt ? new Date(signedAt) : new Date()
+      // Create employee profile first using candidate's actual data
+      const employeeData = {
+        firstName: candidate.firstName || 'New',
+        lastName: candidate.lastName || 'Employee',
+        nationalId: candidate.nationalId,
+        employeeNumber: `EMP-${Date.now()}`,
+        dateOfHire: new Date(),
+        workEmail: candidate.personalEmail,
+        status: 'PROBATION' as any,
+        contractStartDate: new Date(),
+        contractType: 'FULL_TIME_CONTRACT' as any,
+        workType: 'FULL_TIME' as any,
       };
 
-      // optionally store which HR employee signed
-      if (hrEmployeeId) {
-        updateData.employerSignatureUrl = `hr-signed-by-${hrEmployeeId}`;
+      // Validate that candidate has a national ID
+      if (!employeeData.nationalId) {
+        throw new BadRequestException('Candidate must have a national ID before creating employee profile');
       }
 
-      await this.contractRepository.updateById(contractId, updateData);
+      const createdEmployee = await this.employeeService.onboard(employeeData);
+      const employeeProfileId = String((createdEmployee as any)._id || (createdEmployee as any).id);
 
       const startDate = new Date();
       startDate.setDate(startDate.getDate() + 7); // Start date 7 days from now
@@ -607,8 +506,8 @@ export class RecruitmentService {
       });
 
       // Send notification to new employee with their employee details
-      await this.notificationService.create({
-        recipientId: [employeeProfileId],
+      const welcomeNotification = new this.notificationModel({
+        recipientId: [new mongoose.Types.ObjectId(employeeProfileId)],
         type: 'Success',
         deliveryType: 'UNICAST',
         title: 'Welcome to the Team!',
@@ -616,10 +515,11 @@ export class RecruitmentService {
         relatedModule: 'Recruitment',
         isRead: false,
       });
+      await welcomeNotification.save();
 
       // Send notification to candidate (before they become employee) about acceptance
-      await this.notificationService.create({
-        recipientId: [offer.candidateId.toString()],
+      const candidateNotification = new this.notificationModel({
+        recipientId: [new mongoose.Types.ObjectId(offer.candidateId._id.toString())],
         type: 'Success',
         deliveryType: 'UNICAST',
         title: 'Contract Fully Signed - You Are Hired!',
@@ -627,81 +527,20 @@ export class RecruitmentService {
         relatedModule: 'Recruitment',
         isRead: false,
       });
-
-      // Get updated contract after signing
-      const updatedContract = await this.contractRepository.findById(contractId);
-
-      if (!updatedContract) {
-        throw new NotFoundException('Contract not found after signing');
-      }
-
-      // Automatically process signing bonus when BOTH employee and HR have signed
-      if (updatedContract.signingBonus && updatedContract.signingBonus > 0 && updatedContract.role) {
-        await this.processSigningBonusForNewHire(
-          employeeProfileId,
-          updatedContract.role
-        );
-      }
-
-      return updatedContract;
+      await candidateNotification.save();
     }
 
-    // If no candidate, just sign the contract
-    const updateData: any = {
-      employerSignedAt: signedAt ? new Date(signedAt) : new Date()
-    };
+    // Automatically process signing bonus when BOTH employee and HR have signed
+    // if (contract.signingBonus && contract.signingBonus > 0 && contract.role) {
+    //     if (offer?.candidateId) {
+    //         await this.payrollExecutionService.processSigningBonusByPosition(
+    //             offer.candidateId.toString(),
+    //             contract.role
+    //         );
+    //     }
+    // }
 
-    if (hrEmployeeId) {
-      updateData.employerSignatureUrl = `hr-signed-by-${hrEmployeeId}`;
-    }
-
-    await this.contractRepository.updateById(contractId, updateData);
-    const finalContract = await this.contractRepository.findById(contractId);
-
-    if (!finalContract) {
-      throw new NotFoundException('Contract not found after signing');
-    }
-
-    return finalContract;
-  }
-
-  /**
-   * Process signing bonus for new hire after contract is fully signed
-   * ONB-019: Automatically create employee signing bonus record
-   */
-  async processSigningBonusForNewHire(employeeId: string, positionName: string): Promise<void> {
-    try {
-      // Create employee signing bonus record using the payroll execution service
-      await this.employeeSigningBonusService.createEmployeeSigningBonus({
-        employeeId,
-        positionName,
-      });
-
-      // Send notification to HR about signing bonus creation
-      await this.notificationService.create({
-        recipientId: [],
-        type: 'Info',
-        deliveryType: 'BROADCAST',
-        deliverToRole: SystemRole.HR_MANAGER,
-        title: 'Signing Bonus Record Created',
-        message: `Signing bonus record has been automatically created for employee ${employeeId} for position ${positionName}. Status: Pending approval.`,
-        relatedModule: 'Recruitment',
-        isRead: false,
-      });
-    } catch (error) {
-      console.error('Failed to process signing bonus for new hire:', error);
-      // Send error notification to HR
-      await this.notificationService.create({
-        recipientId: [],
-        type: 'Alert',
-        deliveryType: 'BROADCAST',
-        deliverToRole: SystemRole.HR_MANAGER,
-        title: 'Signing Bonus Processing Failed',
-        message: `Failed to create signing bonus record for employee ${employeeId}. Position: ${positionName}. Please create manually. Error: ${error.message || 'Unknown error'}`,
-        relatedModule: 'Recruitment',
-        isRead: false,
-      });
-    }
+    return contract;
   }
 
   // need guards for auth and roles
@@ -967,16 +806,17 @@ export class RecruitmentService {
       if (includeITTasks) tasksList.push('IT setup tasks (Email, Laptop, System Access)');
       if (includeAdminTasks) tasksList.push('Admin tasks (Workspace, ID Badge)');
 
-      await this.notificationService.create({
+      const adminNotification = new this.notificationModel({
         recipientId: [],
         type: 'Info',
         deliveryType: 'BROADCAST',
-        deliverToRole: SystemRole.SYSTEM_ADMIN,
+        deliverToRole: 'System Admin',
         title: 'New Employee Onboarding Tasks Assigned',
         message: `New onboarding tasks have been created for employee ${employeeId}. Tasks: ${tasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${itAdminTaskCount}.`,
         relatedModule: 'Recruitment',
         isRead: false,
       });
+      await adminNotification.save();
     }
 
     return {
@@ -990,38 +830,6 @@ export class RecruitmentService {
         hrTasks: includeHRTasks ? 2 : 0,
         totalTasks: tasks.length,
       },
-    };
-  }
-
-  // need guards for auth and roles
-  //ONB-004
-  async getAllOnboardingChecklists() {
-    const onboardings = await this.onboardingRepository.find();
-
-    // Calculate progress for each onboarding
-    const onboardingsWithProgress = onboardings.map(onboarding => {
-      const totalTasks = onboarding.tasks.length;
-      const completedTasks = onboarding.tasks.filter(t => t.status === OnboardingTaskStatus.COMPLETED).length;
-      const inProgressTasks = onboarding.tasks.filter(t => t.status === OnboardingTaskStatus.IN_PROGRESS).length;
-      const pendingTasks = onboarding.tasks.filter(t => t.status === OnboardingTaskStatus.PENDING).length;
-      const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-
-      return {
-        onboarding,
-        progress: {
-          totalTasks,
-          completedTasks,
-          inProgressTasks,
-          pendingTasks,
-          progressPercentage,
-        },
-      };
-    });
-
-    return {
-      success: true,
-      total: onboardings.length,
-      checklists: onboardingsWithProgress,
     };
   }
 
@@ -1088,8 +896,8 @@ export class RecruitmentService {
         if (taskDeadline >= now && taskDeadline <= reminderThreshold) {
           const daysUntilDeadline = Math.ceil((taskDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-          const notification = await this.notificationService.create({
-            recipientId: [employeeId],
+          const notification = new this.notificationModel({
+            recipientId: [new mongoose.Types.ObjectId(employeeId)],
             type: 'Warning',
             deliveryType: 'UNICAST',
             title: 'Onboarding Task Reminder',
@@ -1097,6 +905,7 @@ export class RecruitmentService {
             relatedModule: 'Recruitment',
             isRead: false,
           });
+          await notification.save();
           notifications.push(notification);
         }
       }
@@ -1145,42 +954,32 @@ export class RecruitmentService {
       throw new NotFoundException('No onboarding checklist found for this employee');
     }
 
-    const taskIndex = onboarding.tasks.findIndex(t => t.name === taskName);
-    if (taskIndex === -1) {
+    const task = onboarding.tasks.find(t => t.name === taskName);
+    if (!task) {
       throw new NotFoundException(`Task "${taskName}" not found in onboarding checklist`);
     }
 
-    // Update the task in the tasks array
-    onboarding.tasks[taskIndex].status = status as OnboardingTaskStatus;
+    task.status = status as OnboardingTaskStatus;
     if (status === OnboardingTaskStatus.COMPLETED) {
-      onboarding.tasks[taskIndex].completedAt = new Date();
+      task.completedAt = new Date();
     }
     if (documentId) {
-      onboarding.tasks[taskIndex].documentId = new mongoose.Types.ObjectId(documentId);
+      task.documentId = new mongoose.Types.ObjectId(documentId);
     }
 
     // Check if all tasks are completed
     const allCompleted = onboarding.tasks.every(t => t.status === OnboardingTaskStatus.COMPLETED);
-
-    // Use updateById to avoid full document validation
-    const updateData: any = {
-      tasks: onboarding.tasks,
-    };
-    
     if (allCompleted) {
-      updateData.completed = true;
-      updateData.completedAt = new Date();
+      onboarding.completed = true;
+      onboarding.completedAt = new Date();
     }
 
-    const updatedOnboarding = await this.onboardingRepository.updateById(
-      onboarding._id.toString(),
-      updateData
-    );
+    await onboarding.save();
 
     return {
       success: true,
       message: `Task "${taskName}" updated to ${status}`,
-      onboarding: updatedOnboarding,
+      onboarding,
     };
   }
 
@@ -1210,8 +1009,8 @@ export class RecruitmentService {
 
     await onboarding.save();
 
-    await this.notificationService.create({
-      recipientId: [employeeId],
+    const notification = new this.notificationModel({
+      recipientId: [new mongoose.Types.ObjectId(employeeId)],
       type: 'Alert',
       deliveryType: 'UNICAST',
       title: 'Onboarding Cancelled',
@@ -1219,6 +1018,7 @@ export class RecruitmentService {
       relatedModule: 'Recruitment',
       isRead: false,
     });
+    await notification.save();
 
     return {
       success: true,
@@ -1307,11 +1107,6 @@ export class RecruitmentService {
   async createjob_template(createjob_template: CreateJobTemplateDto): Promise<JobTemplateDocument> {
     return await this.jobTemplateRepository.create(createjob_template);
   }
-
-  async getAllJobTemplates(): Promise<JobTemplateDocument[]> {
-    return await this.jobTemplateRepository.find();
-  }
-
   async createjob_requision(createjob_requision: CreateJobRequisitionDto): Promise<JobRequisitionDocument> {
     const templateExists = await this.jobTemplateRepository.findById(createjob_requision.templateId);
     if (!templateExists) {
@@ -1339,18 +1134,14 @@ export class RecruitmentService {
 
   //HELPS IN Doing REC-023
   async updatejob_requisition(requisitionId: string, updatejob_requisition: UpdateJobRequisitionDto): Promise<JobRequisitionDocument> {
-    // Only validate template if it's being updated
-    if (updatejob_requisition.templateId) {
-      const templateExists = await this.jobTemplateRepository.findById(updatejob_requisition.templateId);
-      if (!templateExists) {
-        throw new NotFoundException(`Job template with id ${updatejob_requisition.templateId} not found`);
-      }
+    const templateExists = await this.jobTemplateRepository.findById(updatejob_requisition.templateId);
+    if (!templateExists) {
+      throw new NotFoundException(`Job template with id ${updatejob_requisition.templateId} not found`);
     }
-
     if (updatejob_requisition.openings !== undefined && updatejob_requisition.openings <= 0) {
-      throw new BadRequestException(`Number of openings must be greater than zero`);
+      throw new NotFoundException(`Number of openings must be greater than zero`);
     }
-
+    //if () {} can check who will be updating 
     // Resolve whether requisitionId is a Mongo ObjectId or a business requisitionId (e.g. "REQ-2025")
     let targetId = requisitionId;
     if (!mongoose.isValidObjectId(requisitionId)) {
@@ -1360,7 +1151,6 @@ export class RecruitmentService {
       }
       targetId = found._id.toString();
     }
-
     const requisition = await this.jobRequisitionRepository.updateById(
       targetId,
       updatejob_requisition
@@ -1376,11 +1166,6 @@ export class RecruitmentService {
   async getAllpublishedJobRequisition(): Promise<JobRequisitionDocument[]> {
     // can add validation for who is requesting
     return this.jobRequisitionRepository.find({ publishStatus: 'published' });
-  }
-
-  // Get all job requisitions (for HR Manager)
-  async getAllJobRequisitions(): Promise<JobRequisitionDocument[]> {
-    return this.jobRequisitionRepository.find();
   }
   // REC-007: Create CV Document
   async createCVDocument(createCVDocumentDto: CreateCVDocumentDto): Promise<DocumentDocument> {
@@ -1418,8 +1203,7 @@ export class RecruitmentService {
     });
 
     if (existingApplication) {
-      throw new BadRequestException(`Application already exists for candidate ${createApplicationDto.candidateId} and requisition ${createApplicationDto.requisitionId}`);
-      throw new BadRequestException(`Application already exists for candidate ${createApplicationDto.candidateId} and requisition ${createApplicationDto.requisitionId}`);
+      throw new Error(`Application already exists for candidate ${createApplicationDto.candidateId} and requisition ${createApplicationDto.requisitionId}`);
     }
 
     const applicationData = {
@@ -1443,31 +1227,8 @@ export class RecruitmentService {
     if (!await this.validateCandidateExistence(candidateId)) {
       throw new NotFoundException(`Candidate with id ${candidateId} is not valid or not active`);
     }
+    console.log("Candidate ID validated:", candidateId);
     return this.applicationRepository.findByCandidateId(candidateId);
-  }
-
-  // Get all applications with populated candidate data
-  async getAllApplications(): Promise<ApplicationDocument[]> {
-    const applications = await this.applicationRepository.find();
-    // Populate candidate data
-    const populated: ApplicationDocument[] = [];
-    for (const app of applications) {
-      const populatedApp = await app.populate('candidateId');
-      populated.push(populatedApp as ApplicationDocument);
-    }
-    return populated;
-  }
-
-  // Get applications by requisition ID
-  async getApplicationsByRequisition(requisitionId: string): Promise<ApplicationDocument[]> {
-    const applications = await this.applicationRepository.findByRequisitionId(requisitionId);
-    // Populate candidate data
-    const populated: ApplicationDocument[] = [];
-    for (const app of applications) {
-      const populatedApp = await app.populate('candidateId');
-      populated.push(populatedApp as ApplicationDocument);
-    }
-    return populated;
   }
 
   // REC-017 part2 & REC-022: Update Application Status/Stage by candidateId and requisitionId
@@ -1579,6 +1340,7 @@ export class RecruitmentService {
       };
 
       try {
+        console.log('Sending application status notification to recipients:', recipients);
         await this.notificationService.create(notificationData);
       } catch (error) {
         console.error('Failed to send application status notification:', error);
@@ -1731,6 +1493,7 @@ export class RecruitmentService {
       application.currentStage !== ApplicationStage.DEPARTMENT_INTERVIEW) {
       throw new NotFoundException('Interview can only be created for HR or Department interview stages');
     }
+    console.log('Creating interview with data:', application.currentStage);
     const interviewData = {
       applicationId: new Types.ObjectId(createInterviewDto.applicationId),
       stage: createInterviewDto.stage,
@@ -1930,102 +1693,4 @@ export class RecruitmentService {
     return await this.referralRepository.create(referralData);
   }
 
-  // Get all referrals
-  async getAllReferrals(): Promise<ReferralDocument[]> {
-    return await this.referralRepository.find();
-  }
-
-  // Get all offers
-  async getAllOffers(): Promise<OfferDocument[]> {
-    return await this.offerRepository.find();
-  }
-
-  // Get offer by ID with populated data
-  async getOfferById(offerId: string): Promise<OfferDocument> {
-    const offer = await this.offerRepository.findById(offerId);
-    if (!offer) {
-      throw new NotFoundException(`Offer with id ${offerId} not found`);
-    }
-
-    return offer;
-  }
-
-  // Get all contracts
-  async getAllContracts(): Promise<ContractDocument[]> {
-    return await this.contractRepository.findAllWithOffer();
-  }
-
-  // Get contracts by candidate ID
-  async getContractsByCandidateId(candidateId: string): Promise<ContractDocument[]> {
-    // First, find all offers for this candidate
-    const offers = await this.offerRepository.find({ candidateId: new mongoose.Types.ObjectId(candidateId) });
-
-    if (!offers || offers.length === 0) {
-      return [];
-    }
-
-    // Extract offer IDs
-    const offerIds = offers.map(offer => offer._id);
-
-    // Find all contracts that reference these offers
-    return await this.contractRepository.findByOfferIds(offerIds);
-  }
-
-  async createAssessment(interviewId: string, createAssessmentDto: CreateAssessmentDto): Promise<AssessmentResultDocument> {
-    const { interviewerId, score, comments } = createAssessmentDto;
-
-    // Validate interview exists
-    const interview = await this.interviewRepository.findById(interviewId);
-    if (!interview) {
-      throw new NotFoundException(`Interview with id ${interviewId} not found`);
-    }
-
-    // Validate interviewer is part of the panel
-    const isInterviewerInPanel = interview.panel.some(
-      member => member.toString() === interviewerId
-    );
-
-    if (!isInterviewerInPanel) {
-      throw new BadRequestException('Interviewer is not part of this interview panel');
-    }
-
-    // Check if assessment already exists for this interviewer and interview
-    const existingAssessment = await this.assessmentResultRepository.findOne({
-      interviewId: new Types.ObjectId(interviewId),
-      interviewerId: new Types.ObjectId(interviewerId)
-    });
-
-    if (existingAssessment) {
-      throw new BadRequestException('Assessment already exists for this interviewer and interview');
-    }
-
-    // Validate score range
-    if (score < 1 || score > 10) {
-      throw new BadRequestException('Score must be between 1 and 10');
-    }
-
-    // Create the assessment
-    const assessmentData = {
-      interviewId: new Types.ObjectId(interviewId),
-      interviewerId: new Types.ObjectId(interviewerId),
-      score,
-      comments
-    };
-
-    const createdAssessment = await this.assessmentResultRepository.create(assessmentData);
-    await this.interviewRepository.updateById(interviewId, { feedbackId: createdAssessment._id });
-    // Send notification to HR about the assessment
-    await this.notificationService.create({
-      recipientId: [], // Will be broadcast to HR role
-      type: 'Info',
-      deliveryType: 'BROADCAST',
-      deliverToRole: SystemRole.HR_MANAGER,
-      title: 'New Assessment Submitted',
-      message: `Assessment has been submitted for interview ${interviewId} by interviewer ${interviewerId}. Score: ${score}/10`,
-      relatedModule: 'Recruitment',
-      isRead: false,
-    });
-
-    return createdAssessment;
-  }
 }
