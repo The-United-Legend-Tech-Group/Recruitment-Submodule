@@ -94,7 +94,7 @@ export function InterviewScheduling() {
       setPanelMembers([...panelMembers, newMember]);
       setFormData({ ...formData, panel: [...formData.panel, employee._id] });
       setPanelInput('');
-      toast.success(`Added ${employee.firstName || ''} ${employee.lastName || ''}`);
+      toast.success(`Added ${employee.employeeNumber}`);
     } catch (error: any) {
       console.error('Failed to fetch employee:', error);
       toast.error('Failed to find employee. Please check the employee number.');

@@ -126,7 +126,7 @@ export function CandidateTracking() {
         next.set(candidateId, { ...newReferral.data, referringEmployeeId: employee });
         return next;
       });
-      toast.success(`Candidate tagged as referral by ${employee.firstName} ${employee.lastName}`);
+      toast.success(`Candidate tagged as referral by ${employee.employeeNumber ?? employee._id}`);
       setShowTagModal(false);
       setReferrerName('');
       setReferralNotes('');
