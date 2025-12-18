@@ -35,6 +35,7 @@ import {
   Close as XIcon,
   Info as AlertCircleIcon
 } from '@mui/icons-material';
+import { TerminationStatus } from "../../../../../../../backend/src/Recruitment/enums/termination-status.enum";
 
 export function OffboardingClearance() {
   const toast = useToast();
@@ -104,6 +105,30 @@ export function OffboardingClearance() {
           setSelectedChecklist(updatedChecklist);
         }
       }
+
+      // If not all clearances are done -> mark termination as under_review; server auto-approves when fully cleared
+      try {
+        const updatedItem = newChecklists.find((it: any) => it.checklist._id === checklistId);
+        const allCleared = !!updatedItem?.progress?.allCleared;
+        const terminationId = updatedItem?.termination?._id;
+
+        if (terminationId) {
+          if (allCleared) {
+            // Backend will auto-approve via server-side check; just notify user
+            toast.success('All clearances completed — termination will be auto-approved');
+          } else {
+            // Set termination to 'under_review' so HR knows it's not ready
+            await offboardingApi.approveTermination({
+              terminationRequestId: terminationId,
+              status: TerminationStatus.UNDER_REVIEW,
+              hrComments: 'Clearances incomplete — set to under review.'
+            });
+            toast.info('Termination set to under review (clearances incomplete)');
+          }
+        }
+      } catch (err: any) {
+        console.error('Error updating termination approval status:', err);
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.message || error.message || 'Failed to update status');
     }
@@ -143,6 +168,30 @@ export function OffboardingClearance() {
           setSelectedChecklist(updatedChecklist);
         }
       }
+
+      // If not all clearances are done -> mark termination as under_review; server auto-approves when fully cleared
+      try {
+        const updatedItem = newChecklists.find((it: any) => it.checklist._id === checklistId);
+        const allCleared = !!updatedItem?.progress?.allCleared;
+        const terminationId = updatedItem?.termination?._id;
+
+        if (terminationId) {
+          if (allCleared) {
+            // Backend will auto-approve via server-side check; just notify user
+            toast.success('All clearances completed — termination will be auto-approved');
+          } else {
+            // Set termination to 'under_review' so HR knows it's not ready
+            await offboardingApi.approveTermination({
+              terminationRequestId: terminationId,
+              status: TerminationStatus.UNDER_REVIEW,
+              hrComments: 'Clearances incomplete — set to under review.'
+            });
+            toast.info('Termination set to under review (clearances incomplete)');
+          }
+        }
+      } catch (err: any) {
+        console.error('Error updating termination approval status:', err);
+      }
     } catch (error: any) {
       console.error('Equipment update error:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to update equipment status');
@@ -172,6 +221,31 @@ export function OffboardingClearance() {
           setSelectedChecklist(updatedChecklist);
         }
       }
+
+      // If not all clearances are done -> mark termination as under_review; server auto-approves when fully cleared
+      try {
+        const updatedItem = newChecklists.find((it: any) => it.checklist._id === checklistId);
+        const allCleared = !!updatedItem?.progress?.allCleared;
+        const terminationId = updatedItem?.termination?._id;
+        console.log('Updated item for access card:', allCleared);
+
+        if (terminationId) {
+          if (allCleared) {
+            // Backend will auto-approve via server-side check; just notify user
+            toast.success('All clearances completed — termination will be auto-approved');
+          } else {
+            // Set termination to 'under_review' so HR knows it's not ready
+            await offboardingApi.approveTermination({
+              terminationRequestId: terminationId,
+              status: TerminationStatus.UNDER_REVIEW,
+              hrComments: 'Clearances incomplete — set to under review.'
+            });
+            toast.info('Termination set to under review (clearances incomplete)');
+          }
+        }
+      } catch (err: any) {
+        console.error('Error updating termination approval status:', err);
+      }
     } catch (error: any) {
       console.error('Access card update error:', error);
       toast.error(error.response?.data?.message || error.message || 'Failed to update access card status');
@@ -182,7 +256,7 @@ export function OffboardingClearance() {
     try {
       await offboardingApi.approveTermination({
         terminationRequestId: terminationId,
-        status: 'approved',
+        status: TerminationStatus.APPROVED,
         hrComments: 'All clearance requirements completed. Approved for final settlement.',
       });
 
@@ -396,6 +470,7 @@ export function OffboardingClearance() {
                       variant="outlined"
                       size="small"
                       onClick={() => {
+                        console.log('Setting selected checklist:', item);
                         setSelectedChecklist(item);
                         setShowDetailsModal(true);
                       }}
@@ -408,9 +483,9 @@ export function OffboardingClearance() {
                       </Button>
                     )}
                     {allCleared && (
-                      <Chip 
-                        label="✓ Auto-Approved - Ready for Access Revocation" 
-                        color="success" 
+                      <Chip
+                        label="✓ Auto-Approved - Ready for Access Revocation"
+                        color="success"
                         size="small"
                         sx={{ ml: 1 }}
                       />

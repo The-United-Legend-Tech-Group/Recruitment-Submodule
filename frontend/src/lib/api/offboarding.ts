@@ -3,8 +3,7 @@ import api from '@/lib/axios';
 // =================== TYPES ===================
 
 export interface InitiateTerminationReviewDto {
-  employeeId: string;
-  contractId: string;
+  employeeNumber: string;
   reason: string;
   initiator: string;
   employeeComments?: string;
@@ -62,9 +61,11 @@ export interface DepartmentClearanceSignOffDto {
   comments?: string;
 }
 
+import { TerminationStatus } from '../../../../backend/src/Recruitment/enums/termination-status.enum';
+
 export interface ApproveTerminationDto {
   terminationRequestId: string;
-  status: 'approved' | 'rejected';
+  status: TerminationStatus;
   hrComments?: string;
 }
 

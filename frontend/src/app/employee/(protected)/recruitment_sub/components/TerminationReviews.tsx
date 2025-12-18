@@ -22,11 +22,12 @@ import WarningIcon from '@mui/icons-material/Warning';
 import DescriptionIcon from '@mui/icons-material/Description';
 import Avatar from '@mui/material/Avatar';
 import Divider from '@mui/material/Divider';
-import Grid from '@mui/material/Grid';
+// Grid replaced by Stack/Box for responsive layout
 import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import Paper from '@mui/material/Paper';
 import { offboardingApi, employeeApi } from '@/lib/api';
+import { TerminationStatus } from '../../../../../../../backend/src/Recruitment/enums/termination-status.enum';
 import { useToast } from '@/lib/hooks/useToast';
 
 export function TerminationReviews() {
@@ -47,8 +48,7 @@ export function TerminationReviews() {
 
   // Form state for initiating termination
   const [formData, setFormData] = useState({
-    employeeId: '',
-    contractId: '',
+    employeeNumber: '',
     reason: '',
     initiator: '',
     employeeComments: '',
@@ -113,9 +113,10 @@ export function TerminationReviews() {
 
     try {
       setIsSubmitting(true);
+      const status = approvalAction === 'approved' ? TerminationStatus.APPROVED : TerminationStatus.REJECTED;
       await offboardingApi.approveTermination({
         terminationRequestId: selectedRequest._id,
-        status: approvalAction,
+        status,
         hrComments: hrComments.trim() || undefined,
       });
 
@@ -134,7 +135,7 @@ export function TerminationReviews() {
 
   const handleInitiateTermination = async () => {
     // Validate required fields
-    if (!formData.employeeId || !formData.contractId || !formData.reason || !formData.initiator) {
+    if (!formData.employeeNumber || !formData.reason || !formData.initiator) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -142,8 +143,7 @@ export function TerminationReviews() {
     try {
       setIsSubmitting(true);
       await offboardingApi.initiateTerminationReview({
-        employeeId: formData.employeeId.trim(),
-        contractId: formData.contractId.trim(),
+        employeeNumber: formData.employeeNumber.trim(),
         reason: formData.reason.trim(),
         initiator: formData.initiator.trim(),
         employeeComments: formData.employeeComments.trim() || undefined,
@@ -153,8 +153,7 @@ export function TerminationReviews() {
       toast.success('Termination review initiated successfully! Employee termination benefits created and department notifications sent.');
       setShowInitiateForm(false);
       setFormData({
-        employeeId: '',
-        contractId: '',
+        employeeNumber: '',
         reason: '',
         initiator: '',
         employeeComments: '',
@@ -360,8 +359,8 @@ export function TerminationReviews() {
               <CircularProgress />
             </Box>
           ) : selectedRequest ? (
-            <Grid container spacing={3} sx={{ mt: 1 }}>
-              <Grid xs={12} md={5}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} sx={{ mt: 1 }}>
+              <Box sx={{ width: { md: '41%' } }}>
                 {/* Employee Card - polished */}
                 {selectedRequest.employeeId ? (
                   (() => {
@@ -387,22 +386,22 @@ export function TerminationReviews() {
 
                         <Divider sx={{ my: 2 }} />
 
-                        <Grid container spacing={1.5}>
-                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Email</Typography><Typography variant="body2">{emp.workEmail || emp.personalEmail || 'N/A'}</Typography></Grid>
-                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Phone</Typography><Typography variant="body2">{emp.phoneNumber || 'N/A'}</Typography></Grid>
-                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Department</Typography><Typography variant="body2">{emp.department?.name || 'N/A'}</Typography></Grid>
-                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Position</Typography><Typography variant="body2">{emp.position?.title || 'N/A'}</Typography></Grid>
-                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Date of Hire</Typography><Typography variant="body2">{emp.dateOfHire ? new Date(emp.dateOfHire).toLocaleDateString() : 'N/A'}</Typography></Grid>
-                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Contract Type</Typography><Typography variant="body2">{emp.contractType || 'N/A'}</Typography></Grid>
-                        </Grid>
+                        <Stack direction="row" spacing={1.5} sx={{ flexWrap: 'wrap' }}>
+                          <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Email</Typography><Typography variant="body2">{emp.workEmail || emp.personalEmail || 'N/A'}</Typography></Box>
+                          <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Phone</Typography><Typography variant="body2">{emp.phoneNumber || 'N/A'}</Typography></Box>
+                          <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Department</Typography><Typography variant="body2">{emp.department?.name || 'N/A'}</Typography></Box>
+                          <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Position</Typography><Typography variant="body2">{emp.position?.title || 'N/A'}</Typography></Box>
+                          <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Date of Hire</Typography><Typography variant="body2">{emp.dateOfHire ? new Date(emp.dateOfHire).toLocaleDateString() : 'N/A'}</Typography></Box>
+                          <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Contract Type</Typography><Typography variant="body2">{emp.contractType || 'N/A'}</Typography></Box>
+                        </Stack>
                       </Paper>
                     );
                   })()
                 ) : (
                   <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}><Typography variant="body2" color="text.secondary">No employee selected</Typography></Paper>
                 )}
-              </Grid>
-              <Grid xs={12} md={7}>
+              </Box>
+              <Box sx={{ flex: 1 }}>
                 {/* Termination Details - polished */}
                 <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
                   <Stack spacing={1}>
@@ -416,19 +415,19 @@ export function TerminationReviews() {
 
                     <Divider />
 
-                    <Grid container spacing={1.5} sx={{ mt: 1 }}>
-                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Status</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{selectedRequest.status}</Typography></Grid>
-                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Type</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{selectedRequest.initiator || 'N/A'}</Typography></Grid>
-                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Termination Date</Typography><Typography variant="body2">{selectedRequest.terminationDate ? new Date(selectedRequest.terminationDate).toLocaleDateString() : 'TBD'}</Typography></Grid>
-                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Submitted</Typography><Typography variant="body2">{selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</Typography></Grid>
-                      <Grid xs={12}><Typography variant="caption" color="text.secondary">Reason</Typography><Typography variant="body2">{selectedRequest.reason || 'N/A'}</Typography></Grid>
-                      {selectedRequest.employeeComments && (<Grid xs={12}><Typography variant="caption" color="text.secondary">Employee Comments</Typography><Typography variant="body2">{selectedRequest.employeeComments}</Typography></Grid>)}
-                      {selectedRequest.hrComments && (<Grid xs={12}><Typography variant="caption" color="text.secondary">HR Comments</Typography><Typography variant="body2">{selectedRequest.hrComments}</Typography></Grid>)}
-                    </Grid>
+                    <Stack direction="row" spacing={1.5} sx={{ mt: 1, flexWrap: 'wrap' }}>
+                      <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Status</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{selectedRequest.status}</Typography></Box>
+                      <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Type</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{selectedRequest.initiator || 'N/A'}</Typography></Box>
+                      <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Termination Date</Typography><Typography variant="body2">{selectedRequest.terminationDate ? new Date(selectedRequest.terminationDate).toLocaleDateString() : 'TBD'}</Typography></Box>
+                      <Box sx={{ width: '50%' }}><Typography variant="caption" color="text.secondary">Submitted</Typography><Typography variant="body2">{selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</Typography></Box>
+                      <Box sx={{ width: '100%' }}><Typography variant="caption" color="text.secondary">Reason</Typography><Typography variant="body2">{selectedRequest.reason || 'N/A'}</Typography></Box>
+                      {selectedRequest.employeeComments && (<Box sx={{ width: '100%' }}><Typography variant="caption" color="text.secondary">Employee Comments</Typography><Typography variant="body2">{selectedRequest.employeeComments}</Typography></Box>)}
+                      {selectedRequest.hrComments && (<Box sx={{ width: '100%' }}><Typography variant="caption" color="text.secondary">HR Comments</Typography><Typography variant="body2">{selectedRequest.hrComments}</Typography></Box>)}
+                    </Stack>
                   </Stack>
                 </Paper>
-              </Grid>
-            </Grid>
+              </Box>
+            </Stack>
           ) : null}
         </DialogContent>
         {/* single top-right close button used for a cleaner appearance */}
@@ -519,24 +518,13 @@ export function TerminationReviews() {
         <DialogContent>
           <Stack spacing={3} component="form" sx={{ mt: 1 }}>
             <Box>
-              <Typography variant="body2" sx={{ mb: 1 }}>Employee ID *</Typography>
+              <Typography variant="body2" sx={{ mb: 1 }}>Employee Number *</Typography>
               <TextField
                 fullWidth
-                placeholder="Enter employee MongoDB ID"
-                helperText="Enter the MongoDB ObjectId of the employee"
-                value={formData.employeeId}
-                onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-              />
-            </Box>
-
-            <Box>
-              <Typography variant="body2" sx={{ mb: 1 }}>Contract ID *</Typography>
-              <TextField
-                fullWidth
-                placeholder="Enter contract MongoDB ID"
-                helperText="Enter the MongoDB ObjectId of the contract"
-                value={formData.contractId}
-                onChange={(e) => setFormData({ ...formData, contractId: e.target.value })}
+                placeholder="Enter employee number (e.g., EMP001)"
+                helperText="Enter the employee number (contract will be automatically found)"
+                value={formData.employeeNumber}
+                onChange={(e) => setFormData({ ...formData, employeeNumber: e.target.value })}
               />
             </Box>
 
@@ -634,8 +622,7 @@ export function TerminationReviews() {
             onClick={() => {
               setShowInitiateForm(false);
               setFormData({
-                employeeId: '',
-                contractId: '',
+                employeeNumber: '',
                 reason: '',
                 initiator: '',
                 employeeComments: '',
@@ -649,7 +636,7 @@ export function TerminationReviews() {
           </Button>
           <Button
             onClick={handleInitiateTermination}
-            disabled={isSubmitting || !formData.employeeId || !formData.contractId || !formData.reason || !formData.initiator}
+            disabled={isSubmitting || !formData.employeeNumber || !formData.reason || !formData.initiator}
             variant="contained"
             color="error"
             startIcon={isSubmitting && <CircularProgress size={16} color="inherit" />}

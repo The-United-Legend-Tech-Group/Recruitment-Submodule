@@ -55,36 +55,58 @@ export class OffboardingService {
 
   async initiateTerminationReview(dto: InitiateTerminationReviewDto,
   ): Promise<TerminationRequest> {
-    console.log(`Initiating termination review for employee ${dto.employeeId} by ${dto.initiator}`
+    console.log(`Initiating termination review for employee ${dto.employeeNumber} by ${dto.initiator}`
     );
-    const employeeObjectId = new Types.ObjectId(dto.employeeId);
-    const contractObjectId = new Types.ObjectId(dto.contractId);
 
-    // Use EmployeeService instead of direct model call
-    const employee = await this.employeeService.getProfile(dto.employeeId);
+    // Step 1: Get employee by employee number
+    const employee = await this.employeeService.findByEmployeeNumber(dto.employeeNumber);
 
     if (!employee) {
-      console.error(`Employee with ID ${dto.employeeId} not found`);
-      throw new NotFoundException(`Employee with ID ${dto.employeeId} not found`);
+      console.error(`Employee with number ${dto.employeeNumber} not found`);
+      throw new NotFoundException(`Employee with number ${dto.employeeNumber} not found`);
     }
+    // Type-safe runtime normalization (handles missing _id in the TS type)
+    const rawId = (employee as any)?._id ?? (employee as any)?.id;
+    if (!rawId) {
+      console.error(`Employee record for ${dto.employeeNumber} has no id`);
+      throw new NotFoundException(`Employee record for ${dto.employeeNumber} missing id`);
+    }
+    const employeeObjectId = rawId instanceof Types.ObjectId ? rawId : new Types.ObjectId(String(rawId));
+    const employeeId = employeeObjectId.toString();
 
-    console.log(`Employee ${dto.employeeId} validated successfully`);
+    // Step 2: Convert employee number to candidate number (EMP -> CAN)
+    if (!dto.employeeNumber.startsWith('EMP')) {
+      throw new BadRequestException(`Invalid employee number format: ${dto.employeeNumber}. Must start with EMP`);
+    }
+    const candidateNumber = 'CAN' + dto.employeeNumber.substring(3);
+    console.log(`Converted employee number ${dto.employeeNumber} to candidate number: ${candidateNumber}`);
 
-    const contract = await this.contractRepository.findById(contractObjectId.toString());
+    // Step 3: Find candidate by candidate number
+    const candidate = await this.candidateRepository.findByCandidateNumber(candidateNumber);
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with number ${candidateNumber} not found`);
+    }
+    console.log(`Found candidate with ID: ${candidate._id}`);
+
+    // Step 4: Find contract where employeeSignatureUrl contains the candidate number
+    const allContracts = await this.contractRepository.find({});
+    const contract = allContracts.find((c: any) =>
+      c.employeeSignatureUrl && c.employeeSignatureUrl.includes(candidateNumber)
+    );
 
     if (!contract) {
-      console.error(`Contract with ID ${dto.contractId} not found`);
-      throw new NotFoundException(`Contract with ID ${dto.contractId} not found`);
+      throw new NotFoundException(`No contract found with employeeSignatureUrl containing ${candidateNumber}`);
     }
 
-    console.log(`Contract ${dto.contractId} validated successfully`);
+    const contractObjectId = new Types.ObjectId(contract._id);
+    console.log(`Found contract ${contract._id} with employeeSignatureUrl: ${contract.employeeSignatureUrl}`);
 
     const existingTerminationRequest = await this.terminationRequestRepository
-      .findActiveByEmployeeId(dto.employeeId);
+      .findActiveByEmployeeId(employeeId);
 
     if (existingTerminationRequest) {
-      console.warn(`Employee ${dto.employeeId} already has an active termination request`);
-      throw new BadRequestException(`Employee ${dto.employeeId} already has an active termination request with status ${existingTerminationRequest.status}`);
+      console.warn(`Employee ${dto.employeeNumber} already has an active termination request`);
+      throw new BadRequestException(`Employee ${dto.employeeNumber} already has an active termination request with status ${existingTerminationRequest.status}`);
     }
 
     // Try to get appraisal records for the employee (optional)
@@ -92,16 +114,16 @@ export class OffboardingService {
     let latestAppraisal: any = null;
 
     try {
-      appraisalRecords = await this.appraisalrecordservice.getFinalizedRecordsForEmployee(dto.employeeId);
+      appraisalRecords = await this.appraisalrecordservice.getFinalizedRecordsForEmployee(employeeId);
       latestAppraisal = appraisalRecords.length > 0 ? appraisalRecords[0] : null;
 
       if (latestAppraisal) {
-        console.log(`Found performance data for employee ${dto.employeeId}: Score ${latestAppraisal.totalScore}`);
+        console.log(`Found performance data for employee ${dto.employeeNumber}: Score ${latestAppraisal.totalScore}`);
       } else {
-        console.log(`No performance data found for employee ${dto.employeeId}`);
+        console.log(`No performance data found for employee ${dto.employeeNumber}`);
       }
     } catch (error) {
-      console.log(`Could not fetch appraisal records for employee ${dto.employeeId}:`, error.message);
+      console.log(`Could not fetch appraisal records for employee ${dto.employeeNumber}:`, error.message);
       // Continue without appraisal data - it's optional
     }
 
@@ -120,13 +142,13 @@ export class OffboardingService {
       status: TerminationStatus.PENDING
     };
     const savedTerminationRequest = await this.terminationRequestRepository.create(terminationRequestData);
-    console.log(`Termination review initiated successfully for employee ${dto.employeeId} with ID ${savedTerminationRequest._id}`);
+    console.log(`Termination review initiated successfully for employee ${dto.employeeNumber} with ID ${savedTerminationRequest._id}`);
 
     // Step 1: Automatically create employee termination/resignation benefits record
-    console.log(`Creating termination benefits record for employee ${dto.employeeId}...`);
+    console.log(`Creating termination benefits record for employee ${dto.employeeNumber}...`);
     try {
       // Step 1.1: Get employee profile to extract employee number
-      const employeeProfile = await this.employeeService.getProfile(dto.employeeId);
+      const employeeProfile = await this.employeeService.getProfile(employeeId);
       if (!employeeProfile || !employeeProfile.profile) {
         throw new Error('Employee profile not found');
       }
@@ -191,13 +213,13 @@ export class OffboardingService {
       console.log(`Using benefit name: ${benefitName}`);
 
       const terminationBenefitDto = {
-        employeeId: dto.employeeId,
+        employeeId: employeeId,
         benefitName: benefitName,
         terminationId: savedTerminationRequest._id.toString(),
       };
 
       const terminationBenefit = await this.employeeTerminationService.createEmployeeTermination(terminationBenefitDto);
-      console.log(`✓ Employee termination benefits record created successfully for employee ${dto.employeeId}`);
+      console.log(`✓ Employee termination benefits record created successfully for employee ${dto.employeeNumber}`);
       console.log(`Benefit details:`, terminationBenefit);
     } catch (error) {
       console.error(`✗ Failed to create termination benefits record: ${error.message}`);
@@ -220,7 +242,7 @@ export class OffboardingService {
     for (const department of departments) {
       try {
         await this.notificationService.create({
-          recipientId: [dto.employeeId],
+          recipientId: [employeeId],
           type: 'Alert',
           deliveryType: 'MULTICAST',
           title: `Termination Notification - ${department} Department`,
