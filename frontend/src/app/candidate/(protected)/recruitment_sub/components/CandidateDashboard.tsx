@@ -205,6 +205,9 @@ export default function CandidateDashboard() {
                           <Box>
                             <Typography variant="subtitle1" fontWeight={600}>{app.jobRequisitionId?.title || 'Position'}</Typography>
                             <Typography variant="caption" color="text.secondary">Applied on {new Date(app.createdAt).toLocaleDateString()}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                              Application ID: {app._id}
+                            </Typography>
                           </Box>
                           <Chip label={app.status} color={app.status === 'Interview' ? 'info' : app.status === 'Offer' ? 'success' : app.status === 'Rejected' ? 'error' : 'default'} />
                         </Stack>

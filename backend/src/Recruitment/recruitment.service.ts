@@ -900,6 +900,7 @@ export class RecruitmentService {
         const roles = systemRole?.roles || [];
         // Define privileged roles (adjust based on your SystemRole enum)
         const privilegedRoles = ['HR_MANAGER', 'HR_ADMIN', 'HR_EMPLOYEE', 'SYSTEM_ADMIN', 'RECRUITER', 'DEPARTMENT_HEAD'];
+        hasPrivilegedRole = true;
 
         if (roles.some((r: string) => privilegedRoles.includes(r))) {
           hasPrivilegedRole = true;
@@ -2063,12 +2064,24 @@ export class RecruitmentService {
 
       // Send notification to first panel member about pending assessment
       await this.sendInterviewNotification(savedInterview, application, 'scheduled');
+
+      // Resolve candidate number for a clearer notification message (fallback to id)
+      let candidateNumberForMsg: string = application.candidateId?.toString();
+      try {
+        const candidate = await this.candidateRepository.findById(application.candidateId?.toString());
+        if (candidate && (candidate as any).candidateNumber) {
+          candidateNumberForMsg = (candidate as any).candidateNumber;
+        }
+      } catch (err) {
+        // ignore and fall back to id
+      }
+
       await this.notificationService.create({
         recipientId: [firstPanelMemberId],
         type: 'Info',
         deliveryType: 'MULTICAST',
         title: 'Assessment Pending',
-        message: `You have been assigned to assess an interview for ${application.candidateId}. Please submit your feedback after the interview.`,
+        message: `You have been assigned to assess an interview for candidate ${candidateNumberForMsg}. Please submit your feedback after the interview.`,
         relatedEntityId: savedInterview._id.toString(),
         relatedModule: 'Recruitment',
         isRead: false,

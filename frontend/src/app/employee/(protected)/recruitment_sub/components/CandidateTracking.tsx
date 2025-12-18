@@ -30,7 +30,7 @@ import LabelIcon from '@mui/icons-material/Label';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EmailIcon from '@mui/icons-material/Email';
 import CloseIcon from '@mui/icons-material/Close';
-import { recruitmentApi } from '@/lib/api';
+import { recruitmentApi, employeeApi } from '@/lib/api';
 import { useMutation } from '@/lib/hooks/useApi';
 import { useToast } from '@/lib/hooks/useToast';
 
@@ -41,6 +41,7 @@ export function CandidateTracking() {
   const [selectedCandidate, setSelectedCandidate] = useState<any>(null);
   const [candidates, setCandidates] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<Set<string>>(new Set());
+  const [referralData, setReferralData] = useState<Map<string, any>>(new Map());
   const [loading, setLoading] = useState(true);
   const [filterPosition, setFilterPosition] = useState('all');
   const [filterStage, setFilterStage] = useState('all');
@@ -65,15 +66,19 @@ export function CandidateTracking() {
 
       setCandidates(applicationsResponse.data || []);
 
-      // Build referrals set from backend data
+      // Build referrals set and map from backend data
       const referralCandidateIds = new Set<string>();
+      const referralMap = new Map<string, any>();
       (referralsResponse.data || []).forEach((referral: any) => {
         const candidateId = referral.candidateId?._id || referral.candidateId;
         if (candidateId) {
-          referralCandidateIds.add(candidateId.toString());
+          const candidateIdStr = candidateId.toString();
+          referralCandidateIds.add(candidateIdStr);
+          referralMap.set(candidateIdStr, referral);
         }
       });
       setReferrals(referralCandidateIds);
+      setReferralData(referralMap);
     } catch (error: any) {
       toast.error('Failed to load candidates');
       console.error(error);
@@ -85,7 +90,7 @@ export function CandidateTracking() {
   const handleTagAsReferral = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCandidate || !referrerName) {
-      toast.error('Please enter referrer name');
+      toast.error('Please enter employee number');
       return;
     }
 
@@ -93,21 +98,35 @@ export function CandidateTracking() {
       setIsSubmitting(true);
       const candidateId = selectedCandidate.candidateId?._id || selectedCandidate.candidateId;
 
-      await recruitmentApi.createReferral(candidateId, {
-        referringEmployeeId: '673a1234567890abcdef5678', // Temporary HR employee ID
+      // Fetch employee by employee number
+      const employee = await employeeApi.getEmployeeByEmployeeNumber(referrerName.trim());
+
+      if (!employee || !employee._id) {
+        toast.error('Employee not found with this number');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const newReferral = await recruitmentApi.createReferral(candidateId, {
+        referringEmployeeId: employee._id,
         candidateId: candidateId,
-        role: referrerName,
+        role: referralNotes || 'Standard',
         level: referralNotes || 'Standard',
       });
 
-      // Add to referrals set
+      // Add to referrals set and map
       setReferrals(prev => {
         const next = new Set<string>();
         prev.forEach(v => next.add(v));
         next.add(candidateId);
         return next;
       });
-      toast.success('Candidate tagged as referral');
+      setReferralData(prev => {
+        const next = new Map(prev);
+        next.set(candidateId, { ...newReferral.data, referringEmployeeId: employee });
+        return next;
+      });
+      toast.success(`Candidate tagged as referral by ${employee.firstName} ${employee.lastName}`);
       setShowTagModal(false);
       setReferrerName('');
       setReferralNotes('');
@@ -305,6 +324,9 @@ export function CandidateTracking() {
               <TableHead>
                 <TableRow>
                   <TableCell>Candidate</TableCell>
+                  <TableCell>Referral</TableCell>
+                  <TableCell>Candidate Number</TableCell>
+                  <TableCell>Application ID</TableCell>
                   <TableCell>Position</TableCell>
                   <TableCell>Stage</TableCell>
                   <TableCell>Applied</TableCell>
@@ -354,6 +376,35 @@ export function CandidateTracking() {
                             </Stack>
                           )}
                         </Box>
+                      </TableCell>
+                      <TableCell>
+                        {isReferral(candidate) ? (
+                          <Box>
+                            <Chip label="Yes" size="small" color="secondary" />
+                            {(() => {
+                              const candidateId = candidate.candidateId?._id || candidate.candidateId;
+                              const referralInfo = referralData.get(candidateId);
+                              const employeeNumber = referralInfo?.referringEmployeeId?.employeeNumber;
+                              return employeeNumber ? (
+                                <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
+                                  By: {employeeNumber}
+                                </Typography>
+                              ) : null;
+                            })()}
+                          </Box>
+                        ) : (
+                          <Chip label="No" size="small" variant="outlined" />
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color={rejected ? 'text.disabled' : 'text.primary'}>
+                          {candidate.candidateId?.candidateNumber || 'N/A'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" color={rejected ? 'text.disabled' : 'text.primary'}>
+                          {candidate._id}
+                        </Typography>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2" color={rejected ? 'text.disabled' : 'text.primary'}>
@@ -464,16 +515,17 @@ export function CandidateTracking() {
             Tag this candidate as a referral to give them priority in the hiring process.
           </Typography>
           <Stack spacing={3} component="form" onSubmit={handleTagAsReferral}>
+            <Typography variant="body2" sx={{ mb: 1 }}>Referring Employee Number</Typography>
             <TextField
-              label="Referred By (Employee/Role)"
               value={referrerName}
               onChange={(e) => setReferrerName(e.target.value)}
-              placeholder="Enter referrer name or employee role"
+              placeholder="Enter employee number (e.g., EMP-0001)"
               required
               fullWidth
+              helperText="Enter the employee number who referred this candidate"
             />
+            <Typography variant="body2" sx={{ mb: 1, mt: 2 }}>Level/Notes (Optional)</Typography>
             <TextField
-              label="Level/Notes (Optional)"
               value={referralNotes}
               onChange={(e) => setReferralNotes(e.target.value)}
               placeholder="Add level or additional notes about the referral..."
@@ -555,8 +607,8 @@ export function CandidateTracking() {
               </Card>
 
               <Stack spacing={2} component="form" onSubmit={handleSendRejection}>
+                <Typography variant="body2" sx={{ mb: 1 }}>Rejection Message</Typography>
                 <TextField
-                  label="Rejection Message"
                   value={rejectionMessage}
                   onChange={(e) => setRejectionMessage(e.target.value)}
                   placeholder="Enter a personalized rejection message for the candidate..."

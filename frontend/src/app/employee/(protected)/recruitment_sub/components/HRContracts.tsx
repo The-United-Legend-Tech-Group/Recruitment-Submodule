@@ -229,12 +229,15 @@ export default function HRContracts() {
                               try {
                                 // Use api instance to get blob with auth headers
                                 const response = await recruitmentApi.viewDocument(contract.documentId!);
-                                // Create blob URL
-                                const url = window.URL.createObjectURL(new Blob([response.data]));
+                                // Ensure we preserve MIME type when opening the blob
+                                const blob = response.data instanceof Blob
+                                  ? response.data
+                                  : new Blob([response.data], { type: response.headers?.['content-type'] || 'application/pdf' });
+
+                                const url = window.URL.createObjectURL(blob);
                                 const link = document.createElement('a');
                                 link.href = url;
                                 link.setAttribute('target', '_blank'); // Open in new tab
-                                // If we want to download: link.setAttribute('download', 'signed-contract.pdf');
                                 document.body.appendChild(link);
                                 link.click();
                                 link.remove();

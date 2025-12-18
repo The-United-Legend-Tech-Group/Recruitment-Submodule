@@ -130,9 +130,20 @@ export function CandidateOffers({ }: CandidateOffersProps) {
     return offer.finalStatus === 'sent' && offer.applicantResponse === 'pending';
   };
 
-  const isExpired = (deadline: string) => {
+  const isExpired = (deadline: any) => {
     if (!deadline) return false;
-    return new Date(deadline) < new Date();
+    const d = new Date(deadline);
+    if (isNaN(d.getTime())) return false;
+    // treat deadline as inclusive (end of day)
+    const endOfDay = new Date(d);
+    endOfDay.setHours(23, 59, 59, 999);
+    return endOfDay < new Date();
+  };
+
+  const getOfferDeadline = (offer: any) => {
+    if (!offer) return undefined;
+    // support variants of deadline field names
+    return offer.deadline ?? offer.responseDeadline ?? offer.deadlineAt ?? offer.deadlineDate;
   };
 
   return (
@@ -159,7 +170,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
         ) : offers.length > 0 ? (
           <Stack spacing={3}>
             {offers.map((offer) => {
-              const expired = isExpired(offer.deadline);
+              const expired = isExpired(getOfferDeadline(offer));
               const canRespondToOffer = canRespond(offer) && !expired;
               const status = offer.applicantResponse || 'pending';
 
@@ -303,14 +314,14 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                       )}
 
                       {/* Deadline */}
-                      {offer.deadline && (
+                      {getOfferDeadline(offer) && (
                         <Alert
                           severity={expired && canRespond(offer) ? 'error' : 'info'}
                           icon={<CalendarTodayIcon sx={{ fontSize: 20 }} />}
                           sx={{ borderRadius: 2 }}
                         >
                           <Typography variant="body2">
-                            <strong>Response Deadline:</strong> {new Date(offer.deadline).toLocaleDateString('en-US', {
+                            <strong>Response Deadline:</strong> {new Date(getOfferDeadline(offer)).toLocaleDateString('en-US', {
                               weekday: 'long',
                               month: 'long',
                               day: 'numeric',
@@ -527,7 +538,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                 </Paper>
               )}
 
-              {selectedOffer.deadline && (
+              {getOfferDeadline(selectedOffer) && (
                 <Paper
                   variant="outlined"
                   sx={{
@@ -543,14 +554,14 @@ export function CandidateOffers({ }: CandidateOffersProps) {
                         Response Deadline
                       </Typography>
                       <Typography variant="body2" fontWeight={600}>
-                        {new Date(selectedOffer.deadline).toLocaleDateString('en-US', {
+                        {new Date(getOfferDeadline(selectedOffer)).toLocaleDateString('en-US', {
                           weekday: 'long',
                           year: 'numeric',
                           month: 'long',
                           day: 'numeric'
                         })}
                       </Typography>
-                      {isExpired(selectedOffer.deadline) && canRespond(selectedOffer) && (
+                      {isExpired(getOfferDeadline(selectedOffer)) && canRespond(selectedOffer) && (
                         <Typography variant="body2" color="error" fontWeight={500} sx={{ mt: 0.5 }}>
                           ⚠️ This offer has expired
                         </Typography>
@@ -573,7 +584,7 @@ export function CandidateOffers({ }: CandidateOffersProps) {
           >
             Close
           </Button>
-          {selectedOffer && canRespond(selectedOffer) && !isExpired(selectedOffer.deadline) && (
+          {selectedOffer && canRespond(selectedOffer) && !isExpired(getOfferDeadline(selectedOffer)) && (
             <>
               <Button
                 onClick={() => {

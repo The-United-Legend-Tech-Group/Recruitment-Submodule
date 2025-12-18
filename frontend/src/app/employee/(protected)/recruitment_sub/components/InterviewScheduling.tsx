@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { recruitmentApi } from '@/lib/api';
+import { recruitmentApi, employeeApi } from '@/lib/api';
 import { useToast } from '@/lib/hooks/useToast';
 
 interface InterviewFormData {
@@ -40,6 +40,7 @@ export function InterviewScheduling() {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [panelInput, setPanelInput] = useState('');
+  const [panelMembers, setPanelMembers] = useState<{ number: string; id: string }[]>([]);
 
   const [formData, setFormData] = useState<InterviewFormData>({
     applicationId: '',
@@ -63,24 +64,47 @@ export function InterviewScheduling() {
       videoLink: '',
     });
     setPanelInput('');
+    setPanelMembers([]);
   };
 
-  const handleAddPanelMember = () => {
+  const handleAddPanelMember = async () => {
     const trimmed = panelInput.trim();
     if (!trimmed) {
-      toast.error('Please enter an interviewer ID');
+      toast.error('Please enter an employee number');
       return;
     }
-    if (formData.panel.includes(trimmed)) {
-      toast.warning('This interviewer is already added');
+
+    // Check if already added by number or ID
+    if (panelMembers.some((m) => m.number === trimmed || m.id === trimmed)) {
+      toast.warning('This employee is already added');
       return;
     }
-    setFormData({ ...formData, panel: [...formData.panel, trimmed] });
-    setPanelInput('');
+
+    try {
+      // Fetch employee by employee number
+      const employee = await employeeApi.getEmployeeByEmployeeNumber(trimmed);
+
+      if (!employee || !employee._id) {
+        toast.error('Employee not found with this number');
+        return;
+      }
+
+      // Add to panel members list
+      const newMember = { number: employee.employeeNumber, id: employee._id };
+      setPanelMembers([...panelMembers, newMember]);
+      setFormData({ ...formData, panel: [...formData.panel, employee._id] });
+      setPanelInput('');
+      toast.success(`Added ${employee.firstName || ''} ${employee.lastName || ''}`);
+    } catch (error: any) {
+      console.error('Failed to fetch employee:', error);
+      toast.error('Failed to find employee. Please check the employee number.');
+    }
   };
 
-  const handleRemovePanelMember = (id: string) => {
-    setFormData({ ...formData, panel: formData.panel.filter((p) => p !== id) });
+  const handleRemovePanelMember = (employeeId: string) => {
+    const updatedMembers = panelMembers.filter((m) => m.id !== employeeId);
+    setPanelMembers(updatedMembers);
+    setFormData({ ...formData, panel: updatedMembers.map((m) => m.id) });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -286,13 +310,13 @@ export function InterviewScheduling() {
                 </Typography>
 
                 {/* Display Panel Members */}
-                {formData.panel.length > 0 && (
+                {panelMembers.length > 0 && (
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                    {formData.panel.map((memberId) => (
+                    {panelMembers.map((member) => (
                       <Chip
-                        key={memberId}
-                        label={memberId}
-                        onDelete={() => handleRemovePanelMember(memberId)}
+                        key={member.id}
+                        label={`Employee #${member.number}`}
+                        onDelete={() => handleRemovePanelMember(member.id)}
                         deleteIcon={<DeleteIcon />}
                         size="small"
                       />
@@ -311,7 +335,7 @@ export function InterviewScheduling() {
                         handleAddPanelMember();
                       }
                     }}
-                    placeholder="Enter interviewer ObjectId"
+                    placeholder="Enter employee number (e.g., EMP-0001)"
                     size="small"
                     fullWidth
                   />
@@ -324,7 +348,7 @@ export function InterviewScheduling() {
                   </Button>
                 </Stack>
                 <FormHelperText>
-                  Add one or more interviewer IDs (press Enter or click Add)
+                  Add one or more employee numbers (press Enter or click Add)
                 </FormHelperText>
               </Box>
             </Stack>

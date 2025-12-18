@@ -239,6 +239,20 @@ export class EmployeeController {
     return this.employeeService.rejectProfileChangeRequest(requestId, body?.reason);
   }
 
+  @Get('by-number/:employeeNumber')
+  @UseGuards(AuthGuard)
+  @ApiOperation({ summary: 'Get employee by employee number' })
+  @ApiParam({ name: 'employeeNumber', description: 'Employee Number (e.g., EMP-0001)' })
+  @ApiResponse({ status: 200, description: 'Employee retrieved' })
+  @ApiResponse({ status: 404, description: 'Employee not found' })
+  async getEmployeeByEmployeeNumber(@Param('employeeNumber') employeeNumber: string) {
+    const employee = await this.employeeService.findByEmployeeNumber(employeeNumber);
+    if (!employee) {
+      throw new Error(`Employee with number ${employeeNumber} not found`);
+    }
+    return employee;
+  }
+
   // Employee: fetch own (or specific) full profile
   @Get(':id')
   @UseGuards(AuthGuard)

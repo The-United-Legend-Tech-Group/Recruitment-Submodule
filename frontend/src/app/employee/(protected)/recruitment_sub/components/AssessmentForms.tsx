@@ -15,6 +15,9 @@ import {
   Stack,
   TextField,
   Typography,
+  FormControl,
+  FormHelperText,
+  OutlinedInput,
 } from '@mui/material';
 
 import AssignmentIcon from '@mui/icons-material/Assignment';
@@ -320,28 +323,38 @@ export function AssessmentForms() {
               )}
 
               {/* Score */}
+              <Typography variant="body2" sx={{ mb: 1 }}>Score (1-10)</Typography>
               <TextField
-                label="Score (1-10)"
                 type="number"
                 value={formData.score}
                 onChange={(e) => setFormData({ ...formData, score: Number(e.target.value) })}
                 inputProps={{ min: 1, max: 10, step: 0.5 }}
-                helperText="Rate the candidate from 1 (poor) to 10 (excellent)"
                 required
                 fullWidth
               />
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+                Rate the candidate from 1 (poor) to 10 (excellent)
+              </Typography>
 
               {/* Comments */}
+              <Typography variant="body2" sx={{ mb: 1 }}>Assessment Comments</Typography>
               <TextField
-                label="Assessment Comments"
                 multiline
-                rows={8}
+                minRows={6}
+                maxRows={12}
                 value={formData.comments}
                 onChange={(e) => setFormData({ ...formData, comments: e.target.value })}
-                placeholder="Provide detailed feedback about the candidate's performance, strengths, weaknesses, and overall recommendation..."
+                inputProps={{ maxLength: 4000, 'aria-label': 'assessment-comments' }}
                 required
                 fullWidth
-                helperText="Include comprehensive feedback to help make hiring decisions"
+                variant="outlined"
+                sx={{ bgcolor: 'background.paper', mt: 0.5 }}
+                helperText={(
+                  <span style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                    <span>Include comprehensive feedback to help make hiring decisions</span>
+                    <span>{formData.comments.length}/4000</span>
+                  </span>
+                )}
               />
             </Stack>
           </DialogContent>

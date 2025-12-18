@@ -50,6 +50,16 @@ export const employeeApi = {
         const response = await api.get(`/employee/${id}`);
         return response.data;
     },
+    // Get employee by employee number
+    async getEmployeeByEmployeeNumber(employeeNumber: string): Promise<Employee> {
+        const response = await api.get(`/employee/by-number/${employeeNumber}`);
+        return response.data;
+    },
+    // Get all employees (unpaginated)
+    async getAllEmployees(): Promise<Employee[]> {
+        const response = await api.get('/employee/s');
+        return response.data;
+    },
 };
 export const candidateApi = {
     // Get candidate by ID (MongoDB ObjectId)

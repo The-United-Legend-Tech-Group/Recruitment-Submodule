@@ -240,7 +240,7 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
             border: 1,
             borderColor: 'divider',
             borderRadius: 1,
-            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'transparent' : 'grey.50'
+            bgcolor: (theme) => theme.palette.mode === 'dark' ? 'transparent' : 'action.hover',
           }}>
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={3}>
               <Box sx={{ flex: 1 }}>
@@ -370,17 +370,19 @@ function ContractCard({ contract, onRefresh }: ContractCardProps) {
                 onClick={handleUploadSignedContract}
                 disabled={uploading || selectedFiles.length === 0}
                 variant="contained"
+                color="primary"
                 size="large"
                 fullWidth
                 sx={{
                   height: 48,
                   borderRadius: 2,
                   fontWeight: 600,
-                  boxShadow: 2,
-                  '&.Mui-disabled': {
-                    bgcolor: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'action.disabledBackground',
-                    color: (theme) => theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'text.disabled'
-                  }
+                  // Override theme's gray background to use actual primary blue
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
                 }}
                 startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon sx={{ fontSize: 20 }} />}
               >

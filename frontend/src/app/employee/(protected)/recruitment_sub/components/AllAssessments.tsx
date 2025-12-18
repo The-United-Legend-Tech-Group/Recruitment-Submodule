@@ -27,7 +27,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { recruitmentApi } from '@/lib/api';
+import { recruitmentApi, employeeApi } from '@/lib/api';
 import { useToast } from '@/lib/hooks/useToast';
 
 interface Assessment {
@@ -40,9 +40,10 @@ interface Assessment {
     updatedAt: string;
 }
 
-function AssessmentRow({ assessment }: { assessment: Assessment }) {
+function AssessmentRow({ assessment, employeeMap }: { assessment: Assessment; employeeMap: Record<string, string> }) {
     const [open, setOpen] = useState(false);
     const isCompleted = assessment.score > 0;
+    const empNumber = employeeMap[assessment.interviewerId];
 
     return (
         <>
@@ -64,7 +65,7 @@ function AssessmentRow({ assessment }: { assessment: Assessment }) {
                 </TableCell>
                 <TableCell>
                     <Typography variant="body2" sx={{ fontFamily: 'monospace', fontSize: '0.75rem' }}>
-                        {assessment.interviewerId.slice(-8)}
+                        {empNumber ? `#${empNumber}` : assessment.interviewerId.slice(-8)}
                     </Typography>
                 </TableCell>
                 <TableCell align="center">
@@ -121,10 +122,12 @@ function AssessmentRow({ assessment }: { assessment: Assessment }) {
                                 </Box>
                                 <Box>
                                     <Typography variant="caption" color="text.secondary">
-                                        Interviewer ID
+                                        Interviewer
                                     </Typography>
                                     <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
-                                        {assessment.interviewerId}
+                                        {employeeMap[assessment.interviewerId]
+                                            ? `#${employeeMap[assessment.interviewerId]}`
+                                            : assessment.interviewerId}
                                     </Typography>
                                 </Box>
                                 {assessment.comments && (
@@ -154,10 +157,14 @@ export function AllAssessments() {
     const [assessments, setAssessments] = useState<Assessment[]>([]);
     const [filteredAssessments, setFilteredAssessments] = useState<Assessment[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const [employeeMap, setEmployeeMap] = useState<Record<string, string>>({});
 
     useEffect(() => {
         fetchAllAssessments();
     }, []);
+
+    // We now fetch employees together with assessments inside fetchAllAssessments
+    // to ensure employee numbers are available before the table renders, avoiding flicker.
 
     useEffect(() => {
         if (!searchQuery.trim()) {
@@ -179,8 +186,17 @@ export function AllAssessments() {
     const fetchAllAssessments = async () => {
         try {
             setLoading(true);
-            const response = await recruitmentApi.getAllAssessments();
-            const data = response.data || [];
+            // Fetch assessments and employees in parallel so we can build the employeeMap
+            const [assessResp, employees] = await Promise.all([
+                recruitmentApi.getAllAssessments(),
+                employeeApi.getAllEmployees(),
+            ]);
+            const data = assessResp.data || [];
+            const newMap: Record<string, string> = {};
+            (employees || []).forEach((emp: any) => {
+                if (emp && emp._id) newMap[emp._id] = emp.employeeNumber ?? '';
+            });
+            setEmployeeMap(newMap);
             setAssessments(data);
             setFilteredAssessments(data);
         } catch (error: any) {
@@ -275,7 +291,7 @@ export function AllAssessments() {
                                 <TableCell width={50} />
                                 <TableCell>Assessment ID</TableCell>
                                 <TableCell>Interview ID</TableCell>
-                                <TableCell>Interviewer ID</TableCell>
+                                <TableCell>Interviewer (Employee #)</TableCell>
                                 <TableCell align="center">Status/Score</TableCell>
                                 <TableCell>Created</TableCell>
                                 <TableCell>Updated</TableCell>
@@ -283,7 +299,7 @@ export function AllAssessments() {
                         </TableHead>
                         <TableBody>
                             {filteredAssessments.map((assessment) => (
-                                <AssessmentRow key={assessment._id} assessment={assessment} />
+                                <AssessmentRow key={assessment._id} assessment={assessment} employeeMap={employeeMap} />
                             ))}
                         </TableBody>
                     </Table>

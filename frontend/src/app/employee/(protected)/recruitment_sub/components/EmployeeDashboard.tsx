@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { recruitmentApi, offboardingApi } from '@/lib/api';
 import { useToast } from '@/lib/hooks/useToast';
-import { InterviewFeedback } from './InterviewFeedback';
 import { MyApprovals } from './MyApprovals';
 import {
   Box,
@@ -43,7 +42,6 @@ export function EmployeeDashboard() {
   const toast = useToast();
   const [showResignationForm, setShowResignationForm] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(true);
-  const [showInterviewFeedback, setShowInterviewFeedback] = useState(false);
   const [showAssessmentForms, setShowAssessmentForms] = useState(false);
   const [showApprovals, setShowApprovals] = useState(false);
   const [onboardingData, setOnboardingData] = useState<any>(null);
@@ -309,18 +307,16 @@ export function EmployeeDashboard() {
       {/* Navigation Tabs */}
       <Paper variant="outlined" sx={{ borderBottom: 1, borderColor: 'divider' }}>
         <Tabs
-          value={showOnboarding ? 0 : showInterviewFeedback ? 1 : showAssessmentForms ? 2 : showApprovals ? 3 : 0}
+          value={showOnboarding ? 0 : showAssessmentForms ? 1 : showApprovals ? 2 : 0}
           onChange={(_, value) => {
             setShowOnboarding(value === 0);
-            setShowInterviewFeedback(value === 1);
-            setShowAssessmentForms(value === 2);
-            setShowApprovals(value === 3);
+            setShowAssessmentForms(value === 1);
+            setShowApprovals(value === 2);
           }}
           variant="scrollable"
           scrollButtons="auto"
         >
           <Tab label="Onboarding" />
-          <Tab label="Interview Feedback" />
           <Tab label="Assessments" />
           <Tab label="Approvals" />
         </Tabs>
@@ -329,22 +325,6 @@ export function EmployeeDashboard() {
       {/* Approvals Section */}
       {showApprovals && <MyApprovals />}
 
-      {/* Interview Feedback Section */}
-      {showInterviewFeedback && (
-        <Stack spacing={2}>
-          <Alert severity="info" variant="outlined">
-            <AlertTitle>Test Mode</AlertTitle>
-            Enter the Interview ID and your Interviewer ID below to provide feedback.
-          </Alert>
-          <InterviewFeedback
-            interviewId="693adb534ee08e67fadbb70c" // Replace with actual interview ID
-            interviewerId={"6929b38042db6408754efdde"}
-            onSubmitSuccess={() => {
-              toast.success('Thank you for your feedback!');
-            }}
-          />
-        </Stack>
-      )}
 
       {/* Assessment Forms Section */}
       {showAssessmentForms && (
