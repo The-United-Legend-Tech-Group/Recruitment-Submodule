@@ -1257,9 +1257,9 @@ export class RecruitmentService {
     // Send notification to System Admin for IT and Admin tasks
     if (includeITTasks || includeAdminTasks) {
       const itAdminTaskCount = (includeITTasks ? 3 : 0) + (includeAdminTasks ? 2 : 0);
-      const tasksList: string[] = [];
-      if (includeITTasks) tasksList.push('IT setup tasks (Email, Laptop, System Access)');
-      if (includeAdminTasks) tasksList.push('Admin tasks (Workspace, ID Badge)');
+      const itAdminTasksList: string[] = [];
+      if (includeITTasks) itAdminTasksList.push('IT setup tasks (Email, Laptop, System Access)');
+      if (includeAdminTasks) itAdminTasksList.push('Admin tasks (Workspace, ID Badge)');
 
       await this.notificationService.create({
         recipientId: [],
@@ -1267,7 +1267,24 @@ export class RecruitmentService {
         deliveryType: 'BROADCAST',
         deliverToRole: SystemRole.SYSTEM_ADMIN,
         title: 'New Employee Onboarding Tasks Assigned',
-        message: `New onboarding tasks have been created for employee ${employeeNumber || employeeId}. Tasks: ${tasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${itAdminTaskCount}.`,
+        message: `New onboarding tasks have been created for employee ${employeeNumber || employeeId}. Tasks: ${itAdminTasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${itAdminTaskCount}.`,
+        relatedModule: 'Recruitment',
+        isRead: false,
+      });
+    }
+
+    // Send notification to Payroll for HR tasks (Payroll & Benefits)
+    if (includeHRTasks) {
+      const hrTaskCount = 2; // Setup Payroll, Enroll in Benefits
+      const hrTasksList: string[] = ['Payroll setup (Initialize account)', 'Benefits enrollment (Health insurance)'];
+
+      await this.notificationService.create({
+        recipientId: [],
+        type: 'Info',
+        deliveryType: 'BROADCAST',
+        deliverToRole: SystemRole.PAYROLL_SPECIALIST,
+        title: 'New Payroll & Benefits Onboarding Tasks',
+        message: `New payroll and benefits tasks created for employee ${employeeNumber || employeeId}. Tasks: ${hrTasksList.join(', ')}. Deadline: ${deadline.toDateString()}. Total tasks: ${hrTaskCount}.`,
         relatedModule: 'Recruitment',
         isRead: false,
       });
