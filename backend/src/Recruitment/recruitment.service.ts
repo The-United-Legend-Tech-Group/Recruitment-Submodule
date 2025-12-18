@@ -1385,17 +1385,30 @@ export class RecruitmentService {
         // Send reminder if deadline is within threshold and hasn't passed
         if (taskDeadline >= now && taskDeadline <= reminderThreshold) {
           const daysUntilDeadline = Math.ceil((taskDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          const message = `Reminder: Onboarding task "${task.name}" is due in ${daysUntilDeadline} day(s). Department: ${task.department || 'N/A'}`;
+          const title = 'Onboarding Task Reminder';
 
-          const notification = await this.notificationService.create({
-            recipientId: [employeeId],
-            type: 'Warning',
-            deliveryType: 'UNICAST',
-            title: 'Onboarding Task Reminder',
-            message: `Reminder: Onboarding task "${task.name}" is due in ${daysUntilDeadline} day(s). Department: ${task.department || 'N/A'}`,
-            relatedModule: 'Recruitment',
-            isRead: false,
-          });
-          notifications.push(notification);
+          // Prevent spamming: Check if a similar notification was sent in the last 24 hours
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const existingNotification = await this.notificationService.findByRecipientId(employeeId);
+          const recentDuplicate = existingNotification.find(n =>
+            (n as any).title === title &&
+            (n as any).message === message &&
+            new Date((n as any).createdAt) > oneDayAgo
+          );
+
+          if (!recentDuplicate) {
+            const notification = await this.notificationService.create({
+              recipientId: [employeeId],
+              type: 'Warning',
+              deliveryType: 'UNICAST',
+              title,
+              message,
+              relatedModule: 'Recruitment',
+              isRead: false,
+            });
+            notifications.push(notification);
+          }
         }
       }
     }
