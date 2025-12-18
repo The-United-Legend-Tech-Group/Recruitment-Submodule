@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { recruitmentApi, offboardingApi } from '@/lib/api';
+import { recruitmentApi, offboardingApi, notificationApi } from '@/lib/api';
+import type { Notification } from '@/lib/api';
 import { useToast } from '@/lib/hooks/useToast';
 import {
   Box,
@@ -16,7 +17,9 @@ import {
   Grid,
   Paper,
   CircularProgress,
-  Avatar
+  Avatar,
+  Alert,
+  IconButton
 } from '@mui/material';
 import {
   Shield as ShieldIcon,
@@ -24,39 +27,53 @@ import {
   PersonOff as UserXIcon,
   PersonAdd as UserCheckIcon,
   DnsRounded as ServerIcon,
-  Storage as DatabaseIcon
+  Storage as DatabaseIcon,
+  CheckCircle as CheckCircleIcon,
+  Notifications as NotificationsIcon
 } from '@mui/icons-material';
 
 export function SystemAdminDashboard() {
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<'provisioning' | 'revocation'>('provisioning');
   const [employeesReadyForRevocation, setEmployeesReadyForRevocation] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [onboardingNotifications, setOnboardingNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
 
-  const pendingProvisioning = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@company.com',
-      department: 'Engineering',
-      startDate: '2025-12-10',
-      systems: ['Email', 'SSO', 'Payroll', 'GitHub', 'Jira'],
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      email: 'jane.smith@company.com',
-      department: 'Product',
-      startDate: '2025-12-12',
-      systems: ['Email', 'SSO', 'Payroll', 'Figma', 'Confluence'],
-    },
-  ];
+  useEffect(() => {
+    // Fetch notifications on mount and when switching to provisioning tab
+    if (activeTab === 'provisioning') {
+      fetchNotifications();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === 'revocation') {
       fetchEmployeesReadyForRevocation();
     }
   }, [activeTab]);
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const data = await notificationApi.getMyNotifications();
+      setNotifications(data);
+
+      // Filter for onboarding-related notifications for System Admin
+      const onboardingTasks = data.filter(
+        n => n.relatedModule === 'Recruitment' &&
+          (n.title.includes('Onboarding') || n.message.includes('onboarding')) &&
+          !n.isRead
+      );
+      setOnboardingNotifications(onboardingTasks);
+    } catch (error: any) {
+      console.error('Failed to fetch notifications:', error);
+      toast.error(error.response?.data?.message || 'Failed to load notifications');
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
 
   const fetchEmployeesReadyForRevocation = async () => {
     try {
@@ -85,9 +102,20 @@ export function SystemAdminDashboard() {
     }
   };
 
+  const handleMarkAsRead = async (notificationId: string) => {
+    try {
+      await notificationApi.markAsRead(notificationId);
+      toast.success('Task acknowledged');
+      fetchNotifications(); // Refresh notifications
+    } catch (error: any) {
+      console.error('Failed to mark notification as read:', error);
+      toast.error(error.response?.data?.message || 'Failed to update notification');
+    }
+  };
+
   const systemStats = [
     { label: 'Active Users', value: '248', icon: UserCheckIcon, color: '#10b981' },
-    { label: 'Pending Provisioning', value: '5', icon: KeyIcon, color: '#3b82f6' },
+    { label: 'Pending Provisioning', value: onboardingNotifications.length.toString(), icon: KeyIcon, color: '#3b82f6' },
     { label: 'Pending Revocation', value: employeesReadyForRevocation.length.toString(), icon: UserXIcon, color: '#ef4444' },
     { label: 'System Uptime', value: '99.9%', icon: ServerIcon, color: '#a855f7' },
   ];
@@ -153,47 +181,120 @@ export function SystemAdminDashboard() {
         <Stack spacing={2}>
           <Card variant="outlined">
             <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Pending Access Provisioning
-              </Typography>
-              <Stack spacing={2}>
-                {pendingProvisioning.map((user) => (
-                  <Paper key={user.id} variant="outlined" sx={{ p: 2 }}>
-                    <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
-                      <Box>
-                        <Typography variant="subtitle1">{user.name}</Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {user.email}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                          {user.department} · Start Date: {user.startDate}
-                        </Typography>
-                      </Box>
-                      <Chip label="New Hire" color="primary" size="small" />
-                    </Stack>
-
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Systems to provision:
-                      </Typography>
-                      <Stack direction="row" flexWrap="wrap" gap={1}>
-                        {user.systems.map((system) => (
-                          <Chip key={system} label={system} size="small" variant="outlined" />
-                        ))}
-                      </Stack>
-                    </Box>
-
-                    <Stack direction="row" spacing={1}>
-                      <Button variant="contained" color="success" fullWidth size="small">
-                        Provision All Access
-                      </Button>
-                      <Button variant="outlined" size="small">
-                        Custom Setup
-                      </Button>
-                    </Stack>
-                  </Paper>
-                ))}
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+                <Box>
+                  <Typography variant="h6" gutterBottom>
+                    Pending Onboarding Tasks
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    New employees requiring IT/Admin setup
+                  </Typography>
+                </Box>
+                <Button
+                  size="small"
+                  startIcon={<NotificationsIcon />}
+                  onClick={fetchNotifications}
+                  disabled={notificationsLoading}
+                >
+                  Refresh
+                </Button>
               </Stack>
+
+              {notificationsLoading ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+                  <CircularProgress />
+                </Box>
+              ) : onboardingNotifications.length === 0 ? (
+                <Paper variant="outlined" sx={{ p: 4, textAlign: 'center', bgcolor: 'action.hover' }}>
+                  <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 2 }} />
+                  <Typography variant="body1" color="text.secondary" gutterBottom>
+                    All caught up!
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    No pending onboarding tasks at the moment
+                  </Typography>
+                </Paper>
+              ) : (
+                <Stack spacing={2}>
+                  {onboardingNotifications.map((notification) => {
+                    // Extract employee info from the notification message
+                    const messageMatch = notification.message.match(/employee\s+(\S+)/i);
+                    const employeeIdentifier = messageMatch ? messageMatch[1] : 'Unknown';
+
+                    // Extract tasks from message
+                    const tasksMatch = notification.message.match(/Tasks:\s*([^.]+)/);
+                    const tasksText = tasksMatch ? tasksMatch[1].trim() : 'IT and Admin tasks';
+
+                    // Extract deadline if available
+                    const deadlineMatch = notification.message.match(/Deadline:\s*([^.]+)/);
+                    const deadline = deadlineMatch ? deadlineMatch[1].trim() : 'ASAP';
+
+                    // Extract notes if available
+                    const notesMatch = notification.message.match(/Notes:\s*([^.]+(?:\.[^.]+)*?)\.?$/);
+                    const notes = notesMatch ? notesMatch[1].trim() : null;
+
+                    return (
+                      <Paper key={notification._id} variant="outlined" sx={{ p: 2 }}>
+                        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 2 }}>
+                          <Box>
+                            <Typography variant="subtitle1">Employee: {employeeIdentifier}</Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {notification.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                              Deadline: {deadline}
+                            </Typography>
+                          </Box>
+                          <Chip
+                            label={notification.type}
+                            color={notification.type === 'Alert' ? 'error' : notification.type === 'Warning' ? 'warning' : 'info'}
+                            size="small"
+                          />
+                        </Stack>
+
+                        <Alert severity="info" sx={{ mb: 2 }}>
+                          <Typography variant="body2">
+                            {notification.message}
+                          </Typography>
+                        </Alert>
+
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                            Required Tasks:
+                          </Typography>
+                          <Typography variant="body2">
+                            {tasksText}
+                          </Typography>
+                        </Box>
+
+                        {notes && (
+                          <Box sx={{ mb: 2 }}>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                              Additional Notes:
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                              {notes}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            variant="contained"
+                            color="success"
+                            fullWidth
+                            size="small"
+                            startIcon={<CheckCircleIcon />}
+                            onClick={() => handleMarkAsRead(notification._id)}
+                          >
+                            Mark as Complete
+                          </Button>
+                        </Stack>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              )}
             </CardContent>
           </Card>
 

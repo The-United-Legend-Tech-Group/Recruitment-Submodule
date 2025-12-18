@@ -78,4 +78,41 @@ export const candidateApi = {
     },
 };
 
+// Notification interfaces
+export interface Notification {
+    _id: string;
+    recipientId?: string[];
+    type: 'Alert' | 'Info' | 'Success' | 'Warning';
+    deliveryType: 'UNICAST' | 'MULTICAST' | 'BROADCAST';
+    deliverToRole?: string;
+    title: string;
+    message: string;
+    relatedEntityId?: string;
+    relatedModule?: string;
+    isRead: boolean;
+    readBy: string[];
+    createdAt: string;
+}
+
+// Notification API methods
+export const notificationApi = {
+    // Get notifications for authenticated user
+    async getMyNotifications(): Promise<Notification[]> {
+        const response = await api.get('/notification/my-notifications');
+        return response.data;
+    },
+
+    // Mark a notification as read
+    async markAsRead(notificationId: string): Promise<any> {
+        const response = await api.patch(`/notification/${notificationId}/read`);
+        return response.data;
+    },
+
+    // Mark all notifications as read
+    async markAllAsRead(): Promise<any> {
+        const response = await api.patch('/notification/read-all');
+        return response.data;
+    },
+};
+
 export default employeeApi;
