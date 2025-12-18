@@ -91,7 +91,8 @@ export interface GetOnboardingChecklistDto {
 }
 
 export interface SendOnboardingReminderDto {
-  checklistId: string;
+  employeeId: string;
+  daysBeforeDeadline?: number;
 }
 
 export interface UpdateTaskStatusDto {

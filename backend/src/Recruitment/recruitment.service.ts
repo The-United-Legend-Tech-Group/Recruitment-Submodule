@@ -951,6 +951,7 @@ export class RecruitmentService {
   async createOnboardingChecklist(dto: CreateOnboardingChecklistDto) {
     const { employeeId: inputId, tasks } = dto;
     let employeeId = inputId;
+    let employeeDisplayNumber = inputId; // Will store the readable employee number
 
     // Resolve Employee ID from Number if necessary
     if (!mongoose.isValidObjectId(inputId)) {
@@ -959,16 +960,20 @@ export class RecruitmentService {
         throw new NotFoundException(`Employee with number ${inputId} not found`);
       }
       employeeId = String((employee as any)._id || (employee as any).id);
+      employeeDisplayNumber = inputId; // inputId is already the employee number
     } else {
-      // Double check it exists if it is an ID
+      // Double check it exists if it is an ID, and fetch the employee number
       try {
-        const employee = await this.employeeService.getProfile(inputId);
+        const profileData = await this.employeeService.getProfile(inputId);
+        const employee = (profileData as any).profile || profileData;
         if (!employee) throw new Error();
+        employeeDisplayNumber = employee.employeeNumber || inputId;
       } catch {
         // If valid object ID but not found, try searching as number (unlikely but safe)
         const employee = await this.employeeService.findByEmployeeNumber(inputId);
         if (employee) {
           employeeId = String((employee as any)._id || (employee as any).id);
+          employeeDisplayNumber = (employee as any).employeeNumber || inputId;
         }
       }
     }
@@ -1000,6 +1005,21 @@ export class RecruitmentService {
         const tasksForDept = formattedTasks.filter(t => t.department === department);
         const taskNames = tasksForDept.map(t => t.name).join(', ');
 
+        // Collect notes from tasks
+        const taskNotes = tasksForDept
+          .filter(t => t.notes)
+          .map(t => `${t.name}: ${t.notes}`)
+          .join('; ');
+
+        // Find the earliest deadline for the message
+        const departmentDeadlines = tasksForDept.map(t => t.deadline).filter(d => !!d) as Date[];
+        const minDeadline = departmentDeadlines.length > 0
+          ? new Date(Math.min(...departmentDeadlines.map(d => d.getTime())))
+          : null;
+        const deadlineStr = minDeadline ? minDeadline.toDateString() : 'ASAP';
+
+        const notesSection = taskNotes ? ` Notes: ${taskNotes}.` : '';
+
         try {
           await this.notificationService.create({
             recipientId: [],
@@ -1007,7 +1027,7 @@ export class RecruitmentService {
             deliveryType: 'BROADCAST',
             deliverToRole: department as SystemRole,
             title: 'New Onboarding Tasks Assigned',
-            message: `New onboarding tasks assigned for employee ${employeeId}: ${taskNames}.`,
+            message: `New onboarding tasks assigned for employee ${employeeDisplayNumber}. Tasks: ${taskNames}. Deadline: ${deadlineStr}.${notesSection}`,
             relatedModule: 'Recruitment',
             isRead: false,
           });
@@ -1076,6 +1096,21 @@ export class RecruitmentService {
       const tasksForDept = formattedTasks.filter(t => t.department === department);
       const taskNames = tasksForDept.map(t => t.name).join(', ');
 
+      // Collect notes from tasks
+      const taskNotes = tasksForDept
+        .filter(t => t.notes)
+        .map(t => `${t.name}: ${t.notes}`)
+        .join('; ');
+
+      // Find the earliest deadline for the message
+      const departmentDeadlines = tasksForDept.map(t => t.deadline).filter(d => !!d) as Date[];
+      const minDeadline = departmentDeadlines.length > 0
+        ? new Date(Math.min(...departmentDeadlines.map(d => d.getTime())))
+        : null;
+      const deadlineStr = minDeadline ? minDeadline.toDateString() : 'ASAP';
+
+      const notesSection = taskNotes ? ` Notes: ${taskNotes}.` : '';
+
       try {
         await this.notificationService.create({
           recipientId: [],
@@ -1083,7 +1118,7 @@ export class RecruitmentService {
           deliveryType: 'BROADCAST',
           deliverToRole: department as SystemRole,
           title: 'New Onboarding Tasks Assigned',
-          message: `New onboarding tasks assigned for employee ${employeeId}: ${taskNames}.`,
+          message: `New onboarding tasks assigned for employee ${employeeDisplayNumber}. Tasks: ${taskNames}. Deadline: ${deadlineStr}.${notesSection}`,
           relatedModule: 'Recruitment',
           isRead: false,
         });
@@ -1350,17 +1385,30 @@ export class RecruitmentService {
         // Send reminder if deadline is within threshold and hasn't passed
         if (taskDeadline >= now && taskDeadline <= reminderThreshold) {
           const daysUntilDeadline = Math.ceil((taskDeadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          const message = `Reminder: Onboarding task "${task.name}" is due in ${daysUntilDeadline} day(s). Department: ${task.department || 'N/A'}`;
+          const title = 'Onboarding Task Reminder';
 
-          const notification = await this.notificationService.create({
-            recipientId: [employeeId],
-            type: 'Warning',
-            deliveryType: 'UNICAST',
-            title: 'Onboarding Task Reminder',
-            message: `Reminder: Onboarding task "${task.name}" is due in ${daysUntilDeadline} day(s). Department: ${task.department || 'N/A'}`,
-            relatedModule: 'Recruitment',
-            isRead: false,
-          });
-          notifications.push(notification);
+          // Prevent spamming: Check if a similar notification was sent in the last 24 hours
+          const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+          const existingNotification = await this.notificationService.findByRecipientId(employeeId);
+          const recentDuplicate = existingNotification.find(n =>
+            (n as any).title === title &&
+            (n as any).message === message &&
+            new Date((n as any).createdAt) > oneDayAgo
+          );
+
+          if (!recentDuplicate) {
+            const notification = await this.notificationService.create({
+              recipientId: [employeeId],
+              type: 'Warning',
+              deliveryType: 'UNICAST',
+              title,
+              message,
+              relatedModule: 'Recruitment',
+              isRead: false,
+            });
+            notifications.push(notification);
+          }
         }
       }
     }
