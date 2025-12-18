@@ -35,7 +35,7 @@ import {
   Close as XIcon,
   Info as AlertCircleIcon
 } from '@mui/icons-material';
-import { TerminationStatus } from "../../../../../../../backend/src/Recruitment/enums/termination-status.enum";
+
 
 export function OffboardingClearance() {
   const toast = useToast();
@@ -120,7 +120,7 @@ export function OffboardingClearance() {
             // Set termination to 'under_review' so HR knows it's not ready
             await offboardingApi.approveTermination({
               terminationRequestId: terminationId,
-              status: TerminationStatus.UNDER_REVIEW,
+              status: 'under_review',
               hrComments: 'Clearances incomplete — set to under review.'
             });
             toast.info('Termination set to under review (clearances incomplete)');
@@ -183,7 +183,7 @@ export function OffboardingClearance() {
             // Set termination to 'under_review' so HR knows it's not ready
             await offboardingApi.approveTermination({
               terminationRequestId: terminationId,
-              status: TerminationStatus.UNDER_REVIEW,
+              status: 'under_review',
               hrComments: 'Clearances incomplete — set to under review.'
             });
             toast.info('Termination set to under review (clearances incomplete)');
@@ -237,7 +237,7 @@ export function OffboardingClearance() {
             // Set termination to 'under_review' so HR knows it's not ready
             await offboardingApi.approveTermination({
               terminationRequestId: terminationId,
-              status: TerminationStatus.UNDER_REVIEW,
+              status: 'under_review',
               hrComments: 'Clearances incomplete — set to under review.'
             });
             toast.info('Termination set to under review (clearances incomplete)');
@@ -256,7 +256,7 @@ export function OffboardingClearance() {
     try {
       await offboardingApi.approveTermination({
         terminationRequestId: terminationId,
-        status: TerminationStatus.APPROVED,
+        status: 'approved',
         hrComments: 'All clearance requirements completed. Approved for final settlement.',
       });
 

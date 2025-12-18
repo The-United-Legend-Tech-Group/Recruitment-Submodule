@@ -61,11 +61,9 @@ export interface DepartmentClearanceSignOffDto {
   comments?: string;
 }
 
-import { TerminationStatus } from '../../../../backend/src/Recruitment/enums/termination-status.enum';
-
 export interface ApproveTerminationDto {
   terminationRequestId: string;
-  status: TerminationStatus;
+  status: 'pending' | 'under_review' | 'approved' | 'rejected';
   hrComments?: string;
 }
 

@@ -27,7 +27,7 @@ import IconButton from '@mui/material/IconButton';
 import CloseIcon from '@mui/icons-material/Close';
 import Paper from '@mui/material/Paper';
 import { offboardingApi, employeeApi } from '@/lib/api';
-import { TerminationStatus } from '../../../../../../../backend/src/Recruitment/enums/termination-status.enum';
+
 import { useToast } from '@/lib/hooks/useToast';
 
 export function TerminationReviews() {
@@ -113,7 +113,7 @@ export function TerminationReviews() {
 
     try {
       setIsSubmitting(true);
-      const status = approvalAction === 'approved' ? TerminationStatus.APPROVED : TerminationStatus.REJECTED;
+      const status = approvalAction === 'approved' ? 'approved' : 'rejected';
       await offboardingApi.approveTermination({
         terminationRequestId: selectedRequest._id,
         status,
