@@ -1944,7 +1944,7 @@ The employee is now ready for system access revocation. Please navigate to Syste
           );
 
           let employeeData: any = null;
-          if (termination) {
+          if (termination && termination.employeeId) {
             try {
               const empProfile = await this.employeeService.getProfile(
                 termination.employeeId.toString()

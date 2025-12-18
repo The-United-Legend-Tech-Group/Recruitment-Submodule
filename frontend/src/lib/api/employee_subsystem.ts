@@ -2,6 +2,8 @@ import api from '@/lib/axios';
 
 // Employee interfaces
 export interface Employee {
+    profile: any;
+    data: any
     _id: string;
     employeeNumber: string;
     fullName: {

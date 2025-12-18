@@ -20,13 +20,20 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import WarningIcon from '@mui/icons-material/Warning';
 import DescriptionIcon from '@mui/icons-material/Description';
-import { offboardingApi } from '@/lib/api';
+import Avatar from '@mui/material/Avatar';
+import Divider from '@mui/material/Divider';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import Paper from '@mui/material/Paper';
+import { offboardingApi, employeeApi } from '@/lib/api';
 import { useToast } from '@/lib/hooks/useToast';
 
 export function TerminationReviews() {
   const toast = useToast();
   const [showInitiateForm, setShowInitiateForm] = useState(false);
   const [terminationRequests, setTerminationRequests] = useState<any[]>([]);
+  const [employeeMap, setEmployeeMap] = useState<Record<string, { employeeNumber?: string }>>({});
   const [loading, setLoading] = useState(true);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
@@ -34,6 +41,9 @@ export function TerminationReviews() {
   const [hrComments, setHrComments] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [creatingChecklist, setCreatingChecklist] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsLoading, setDetailsLoading] = useState(false);
+  const [employeeDetailsMap, setEmployeeDetailsMap] = useState<Record<string, any>>({});
 
   // Form state for initiating termination
   const [formData, setFormData] = useState({
@@ -53,9 +63,36 @@ export function TerminationReviews() {
     try {
       setLoading(true);
       const response = await offboardingApi.getAllTerminationRequests();
-      if (response.data) {
-        setTerminationRequests(Array.isArray(response.data) ? response.data : []);
+      const requests = response.data && Array.isArray(response.data) ? response.data : [];
+
+      // Fetch employee numbers for any employeeIds we don't already have
+      const uniqueEmployeeIds = Array.from(new Set(requests.map((r: any) => r.employeeId).filter(Boolean)));
+      const idsToFetch = uniqueEmployeeIds.filter((id) => !employeeMap[id]);
+
+      if (idsToFetch.length > 0) {
+        console.log('Fetching employee data for IDs:', idsToFetch);
+        const promises = idsToFetch.map(async (id) => {
+          try {
+            const emp = await employeeApi.getEmployeebyId(id);
+            console.log('Fetched employee:', id, emp);
+            return { id, employeeNumber: emp?.profile?.employeeNumber };
+          } catch (err) {
+            console.error('Failed to fetch employee for id', id, err);
+            return { id, employeeNumber: undefined };
+          }
+        });
+        const results = await Promise.all(promises);
+        console.log('Employee fetch results:', results);
+        const newEmployeeMap: Record<string, { employeeNumber?: string }> = { ...employeeMap };
+        results.forEach((r) => {
+          if (r && r.id) newEmployeeMap[r.id] = { employeeNumber: r.employeeNumber };
+        });
+        console.log('Updated employee map:', newEmployeeMap);
+        setEmployeeMap(newEmployeeMap);
       }
+
+      // Set termination requests after fetching employee data
+      setTerminationRequests(requests);
     } catch (error: any) {
       console.error('Failed to fetch termination requests:', error);
       toast.error(error.response?.data?.message || 'Failed to load termination requests');
@@ -149,6 +186,32 @@ export function TerminationReviews() {
     }
   };
 
+  // Fetch and show full employee details for a request
+  const handleViewDetails = async (request: any) => {
+    setSelectedRequest(request);
+    setDetailsOpen(true);
+    const empId = request?.employeeId;
+    if (!empId) return;
+    if (employeeDetailsMap[empId]) return; // already cached
+
+    try {
+      setDetailsLoading(true);
+      const resp = await employeeApi.getEmployeebyId(empId);
+      // normalize: backend may return { profile: {...} } or the profile directly
+      const full = resp?.profile ? resp.profile : (resp?.data ? (resp.data.profile || resp.data) : resp);
+      setEmployeeDetailsMap((prev) => ({ ...prev, [empId]: full }));
+    } catch (err) {
+      console.error('Error loading employee details for', empId, err);
+    } finally {
+      setDetailsLoading(false);
+    }
+  };
+
+  const handleCloseDetails = () => {
+    setDetailsOpen(false);
+    setSelectedRequest(null);
+  };
+
   return (
     <Stack spacing={3}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
@@ -185,7 +248,11 @@ export function TerminationReviews() {
                   <CardContent>
                     <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ mb: 1.5 }}>
                       <Box>
-                        <Typography variant="subtitle1">Employee ID: {request.employeeId?.toString().slice(-8)}</Typography>
+                        <Typography variant="subtitle1">
+                          {employeeMap[request.employeeId]?.employeeNumber
+                            ? `Employee: ${employeeMap[request.employeeId].employeeNumber}`
+                            : `Employee ID: ${request.employeeId?.toString().slice(-8)}`}
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">Contract: {request.contractId?.toString().slice(-8)}</Typography>
                       </Box>
                       <Chip
@@ -234,7 +301,7 @@ export function TerminationReviews() {
 
                     <Stack direction="row" spacing={1}>
                       <Button
-                        onClick={() => toast.info('Feature coming soon')}
+                        onClick={() => handleViewDetails(request)}
                         variant="outlined"
                         size="small"
                       >
@@ -267,6 +334,106 @@ export function TerminationReviews() {
         </CardContent>
       </Card>
 
+      {/* Details Dialog */}
+      <Dialog
+        open={detailsOpen && !!selectedRequest}
+        onClose={() => !detailsLoading && handleCloseDetails()}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ pr: 1 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ width: '100%' }}>
+            <Box>
+              <Typography variant="h6">Termination & Employee Details</Typography>
+              <Typography variant="body2" color="text.secondary">View termination request and employee profile</Typography>
+            </Box>
+            <Box>
+              <IconButton onClick={handleCloseDetails} disabled={detailsLoading} aria-label="close">
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {detailsLoading ? (
+            <Box display="flex" justifyContent="center" alignItems="center" py={4}>
+              <CircularProgress />
+            </Box>
+          ) : selectedRequest ? (
+            <Grid container spacing={3} sx={{ mt: 1 }}>
+              <Grid xs={12} md={5}>
+                {/* Employee Card - polished */}
+                {selectedRequest.employeeId ? (
+                  (() => {
+                    const emp = employeeDetailsMap[selectedRequest.employeeId];
+                    if (!emp) return <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}><Typography variant="body2" color="text.secondary">No employee data available</Typography></Paper>;
+                    const initials = ((emp.firstName || '')[0] || '') + ((emp.lastName || '')[0] || '');
+                    const fullName = ((emp.firstName || emp.fullName?.firstName || '') + ' ' + (emp.lastName || emp.fullName?.lastName || '')).trim();
+                    const statusLabel = (emp.status || 'N/A').toString();
+                    const chipColor = statusLabel.toUpperCase() === 'ACTIVE' ? 'success' : statusLabel.toUpperCase() === 'TERMINATED' ? 'error' : 'default';
+
+                    return (
+                      <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar sx={{ width: 80, height: 80, fontSize: 28 }}>{initials.toUpperCase()}</Avatar>
+                          <Box>
+                            <Typography variant="h6">{fullName || 'Unnamed'}</Typography>
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 0.5 }}>{emp.employeeNumber || 'Employee number N/A'}</Typography>
+                            <Box sx={{ mt: 1 }}>
+                              <Chip label={statusLabel} size="small" color={chipColor as any} sx={{ textTransform: 'capitalize' }} />
+                            </Box>
+                          </Box>
+                        </Stack>
+
+                        <Divider sx={{ my: 2 }} />
+
+                        <Grid container spacing={1.5}>
+                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Email</Typography><Typography variant="body2">{emp.workEmail || emp.personalEmail || 'N/A'}</Typography></Grid>
+                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Phone</Typography><Typography variant="body2">{emp.phoneNumber || 'N/A'}</Typography></Grid>
+                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Department</Typography><Typography variant="body2">{emp.department?.name || 'N/A'}</Typography></Grid>
+                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Position</Typography><Typography variant="body2">{emp.position?.title || 'N/A'}</Typography></Grid>
+                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Date of Hire</Typography><Typography variant="body2">{emp.dateOfHire ? new Date(emp.dateOfHire).toLocaleDateString() : 'N/A'}</Typography></Grid>
+                          <Grid xs={6}><Typography variant="caption" color="text.secondary">Contract Type</Typography><Typography variant="body2">{emp.contractType || 'N/A'}</Typography></Grid>
+                        </Grid>
+                      </Paper>
+                    );
+                  })()
+                ) : (
+                  <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}><Typography variant="body2" color="text.secondary">No employee selected</Typography></Paper>
+                )}
+              </Grid>
+              <Grid xs={12} md={7}>
+                {/* Termination Details - polished */}
+                <Paper variant="outlined" sx={{ p: 3, borderRadius: 2 }}>
+                  <Stack spacing={1}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Box>
+                        <Typography variant="h6">Termination</Typography>
+                        <Typography variant="body2" color="text.secondary">Request details and context</Typography>
+                      </Box>
+                      <Typography variant="body2" color="text.secondary">ID: {selectedRequest._id}</Typography>
+                    </Stack>
+
+                    <Divider />
+
+                    <Grid container spacing={1.5} sx={{ mt: 1 }}>
+                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Status</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{selectedRequest.status}</Typography></Grid>
+                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Type</Typography><Typography variant="body2" sx={{ textTransform: 'capitalize' }}>{selectedRequest.initiator || 'N/A'}</Typography></Grid>
+                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Termination Date</Typography><Typography variant="body2">{selectedRequest.terminationDate ? new Date(selectedRequest.terminationDate).toLocaleDateString() : 'TBD'}</Typography></Grid>
+                      <Grid xs={6}><Typography variant="caption" color="text.secondary">Submitted</Typography><Typography variant="body2">{selectedRequest.createdAt ? new Date(selectedRequest.createdAt).toLocaleString() : 'N/A'}</Typography></Grid>
+                      <Grid xs={12}><Typography variant="caption" color="text.secondary">Reason</Typography><Typography variant="body2">{selectedRequest.reason || 'N/A'}</Typography></Grid>
+                      {selectedRequest.employeeComments && (<Grid xs={12}><Typography variant="caption" color="text.secondary">Employee Comments</Typography><Typography variant="body2">{selectedRequest.employeeComments}</Typography></Grid>)}
+                      {selectedRequest.hrComments && (<Grid xs={12}><Typography variant="caption" color="text.secondary">HR Comments</Typography><Typography variant="body2">{selectedRequest.hrComments}</Typography></Grid>)}
+                    </Grid>
+                  </Stack>
+                </Paper>
+              </Grid>
+            </Grid>
+          ) : null}
+        </DialogContent>
+        {/* single top-right close button used for a cleaner appearance */}
+      </Dialog>
+
       {/* Approval/Rejection Modal */}
       <Dialog
         open={showApprovalModal && !!selectedRequest}
@@ -281,7 +448,11 @@ export function TerminationReviews() {
           {selectedRequest && (
             <Stack spacing={2} sx={{ mt: 1 }}>
               <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 1, color: 'text.primary' }}>
-                <Typography variant="body2" color="text.secondary">Employee ID: {selectedRequest.employeeId?.toString().slice(-8)}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {employeeMap[selectedRequest.employeeId]?.employeeNumber
+                    ? `Employee: ${employeeMap[selectedRequest.employeeId].employeeNumber}`
+                    : `Employee ID: ${selectedRequest.employeeId?.toString().slice(-8)}`}
+                </Typography>
                 <Typography variant="body2" color="text.secondary">Reason: {selectedRequest.reason}</Typography>
               </Box>
 
